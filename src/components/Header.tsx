@@ -1,4 +1,9 @@
+import { useNavigate } from "react-router-dom";
+
 const Header = () => {
+    // react-router-dom 라이브러리 사용
+    const navigate = useNavigate();
+
     return (
         // 헤더 컨테이너
         <header className="sticky top-0 z-50 bg-white shadow-md">
@@ -31,8 +36,11 @@ const Header = () => {
                     {/* 우측 메뉴/로그인 영역 */}
                     <div className="flex items-center space-x-4">
                         {/* 로그인 버튼 */}
-                        <button className="hidden sm:inline-block text-gray-600 hover:text-red-600 font-medium">
-                        로그인
+                        <button
+                            className="hidden sm:inline-block text-gray-600 hover:text-red-600 font-medium"
+                            onClick={() => navigate('/login')}
+                        >
+                            로그인
                         </button>
                         
                         {/* 모바일 메뉴/아이콘 (User 아이콘 예시) */}

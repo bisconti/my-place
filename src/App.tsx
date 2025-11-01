@@ -1,22 +1,21 @@
+import { BrowserRouter, Route, Routes } from 'react-router-dom'
 import './App.css'
-import Header from './components/Header'
+import MainLayout from './components/MainLayout'
+import Login from './components/Login'
 
 function App() {
 
   return (
-    <>
-      <Header />
-
-      <main className='max-w-7xl mx-auto mt-8 p-4'>
-        <h2 className='text-3xl font-semibold text-gray-800'>메인 콘텐츠 영역</h2>
-        <p className='mt-4 text-gray-600'>
-          추천 콘텐츠
-        </p>
-        <div className='h-96 bg-gray-50 mt-6 rounded-lg p-4 flex items-center justify-center text-gray-500'>
-          메인 콘텐츠
-        </div>
-      </main>
-    </>
+    <BrowserRouter>
+      <div className='min-h-screen bg-gray-50'>
+        <Routes>
+          <Route path='/' element={<MainLayout />} />
+          <Route path='/login' element={<Login />} />
+          <Route path='/signup' element={<h1 className='text-3xl p-8'>회원가입 페이지</h1>} />
+          <Route path='/find-password' element={<h1 className='text-3xl p-8'>비밀번호 찾기 페이지</h1>} />
+        </Routes>
+      </div>
+    </BrowserRouter>
   )
 }
 
