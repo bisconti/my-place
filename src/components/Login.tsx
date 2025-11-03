@@ -1,4 +1,5 @@
 import { yupResolver } from "@hookform/resolvers/yup";
+import React from "react";
 import { useForm, type SubmitHandler } from "react-hook-form";
 import { Link, useNavigate } from "react-router-dom"
 import * as yup from 'yup';
@@ -22,7 +23,8 @@ const Login = () => {
 
     // useForm 초기화, yupResolver 적용
     const { register, handleSubmit, formState: { errors }} = useForm<LoginFormData>({
-        resolver: yupResolver(LoginSchema)
+        resolver: yupResolver(LoginSchema),
+        mode: 'onSubmit'
     });
 
     // 유효성 검증 통과 시 실행
@@ -30,6 +32,17 @@ const Login = () => {
         console.log(data);
         // login API 호출
     }
+
+    // error message control
+    const handleErrorMsg = React.useMemo(() => {
+        const errorKeys = Object.keys(errors);
+
+        if (errorKeys.length > 0) {
+            const errorKey = errorKeys[0] as keyof LoginFormData;
+            return errors[errorKey]?.message;
+        }
+        return null;
+    }, [errors]);
 
     return (
         <div className="flex items-center justify-center min-h-screen bg-gray-50 p-4">
@@ -77,11 +90,14 @@ const Login = () => {
                             placeholder="비밀번호"
                         />
                     </div>
+
                     {/* 유효성 검증 오류 메시지 표시 */}
-                    {errors.password && (
-                        <p className="text-xs text-red-500 text-right w-full">
-                            {errors.password.message}
-                        </p>
+                    {handleErrorMsg && (
+                        <div className="pt-2">
+                            <p className="text-xs text-red-500 text-center w-full">
+                                {handleErrorMsg}
+                            </p>
+                        </div>
                     )}
 
                     {/* 로그인 버튼 */}
