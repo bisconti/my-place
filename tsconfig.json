@@ -4,10 +4,12 @@
     { "path": "./tsconfig.app.json" },
     { "path": "./tsconfig.node.json" }
   ],
-
-  // vite config 파일 경로 alias 지정
-  "baseUrl": ".",
-  "paths": {
-    "@components/*": ["src/components/*"]
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      // vite config 파일 경로 alias 지정
+      "@components/*": ["src/components/*"],
+      "@contexts/*": ["src/contexts/*"]
+    }
   }
 }
