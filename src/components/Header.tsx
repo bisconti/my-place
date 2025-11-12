@@ -1,8 +1,10 @@
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "../contexts/useAuth";
 
 const Header = () => {
     // react-router-dom 라이브러리 사용
     const navigate = useNavigate();
+    const { user, logout } = useAuth();
 
     return (
         // 헤더 컨테이너
@@ -35,13 +37,33 @@ const Header = () => {
 
                     {/* 우측 메뉴/로그인 영역 */}
                     <div className="flex items-center space-x-4">
-                        {/* 로그인 버튼 */}
-                        <button
-                            className="hidden sm:inline-block text-gray-600 hover:text-red-600 font-medium"
-                            onClick={() => navigate('/login')}
-                        >
+
+                        {user ? (
+                            // ⭐️ 로그인 상태: 닉네임과 로그아웃 버튼 표시
+                            <div className="flex items-center space-x-4 p-2 bg-indigo-50 rounded-full">
+                            <span className="text-indigo-700 text-sm font-semibold ml-2">
+                                {/* 닉네임 표시 */}
+                                {user.username} 님 환영합니다!
+                            </span>
+                            <button
+                                onClick={() => {
+                                logout();
+                                navigate('/');
+                                }}
+                                className="px-4 py-1 text-sm font-medium text-white bg-indigo-600 rounded-full shadow-lg hover:bg-indigo-700 transition duration-150 transform hover:scale-105"
+                            >
+                                로그아웃
+                            </button>
+                            </div>
+                        ) : (
+                            // ⭐️ 로그아웃 상태: 로그인 버튼 표시
+                            <button
+                            onClick={() => navigate('login')}
+                            className="px-5 py-2 text-sm font-medium text-white bg-indigo-500 rounded-lg shadow-md hover:bg-indigo-600 transition duration-150 transform hover:scale-105"
+                            >
                             로그인
-                        </button>
+                            </button>
+                        )}
                         
                         {/* 모바일 메뉴/아이콘 (User 아이콘 예시) */}
                         <button className="text-gray-600 hover:text-red-600 focus:outline-none" aria-label="사용자 메뉴">
