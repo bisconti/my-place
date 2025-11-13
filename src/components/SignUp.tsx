@@ -130,7 +130,7 @@ const SignUp: React.FC = () => {
         trigger 
     } = useForm<RegisterFormData>({
         resolver: yupResolver(RegisterSchema),
-        mode: 'onBlur'
+        mode: 'onSubmit'
     });
 
     // 이메일 중복 확인 함수
@@ -374,13 +374,8 @@ const SignUp: React.FC = () => {
                     <button
                         type="submit"
                         // 이메일 중복 확인 상태가 'available'이 아니면 버튼 비활성화
-                        disabled={isSubmitting || emailCheckStatus !== 'available'}
-                        className={`group relative w-full flex justify-center py-2 px-4 border border-transparent text-lg font-bold rounded-lg text-white transition duration-150 transform 
-                            ${(isSubmitting || emailCheckStatus !== 'available') 
-                                ? 'bg-gray-400 cursor-not-allowed'
-                                : 'bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 hover:scale-[1.01]'
-                            }
-                        `}
+                        disabled={isSubmitting}
+                        className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-lg font-bold rounded-lg text-white transition duration-150 transform bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 hover:scale-[1.01]'"
                     >
                         {isSubmitting ? (
                             <div className="flex items-center">
