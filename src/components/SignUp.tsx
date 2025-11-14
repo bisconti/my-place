@@ -1,9 +1,10 @@
 import React, { useCallback, useState } from 'react';
-import { useForm, type SubmitHandler, type FieldErrors, type UseFormRegister } from 'react-hook-form';
+import { useForm, type SubmitHandler } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import * as yup from 'yup';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import type { EmailCheckStatus, MockError, SignUpInputFieldProps } from '../types/user/user.types';
 // import { useAuth } from "../contexts/useAuth"; 
 
 // 이메일 정규식, 메시지
@@ -42,53 +43,50 @@ const RegisterSchema = yup.object({
 // 회원가입 폼 데이터 타입 추론
 type RegisterFormData = yup.InferType<typeof RegisterSchema>;
 
-interface InputFieldProps {
-    label: string;
-    name: keyof RegisterFormData;
-    type?: string;
-    placeholder?: string;
-    disabled: boolean;
-    errors: FieldErrors<RegisterFormData>;
-    register: UseFormRegister<RegisterFormData>;
-}
+// 필드 순서를 명시적으로 정의 (순차적 에러 메시지 표시를 위해 사용)
+const FIELD_ORDER: (keyof RegisterFormData)[] = [
+    'email', 
+    'password', 
+    'name', 
+    'birthDate', 
+    'gender'
+];
 
-const InputField: React.FC<InputFieldProps> = ({ 
+// InputFieldProps 인터페이스는 이제 src/types/user.types에서 가져옵니다.
+const InputField: React.FC<SignUpInputFieldProps> = ({ 
     label, 
     name, 
     type = 'text', 
     placeholder, 
     errors, 
     register, 
+    firstErrorKey, 
     ...rest 
-}) => (
-    <div className="flex items-center space-x-4">
-        <label htmlFor={name} className="flex-shrink-0 w-24 text-sm font-medium text-gray-700">
-            {label}
-        </label>
-        <div className="flex-1">
-            <input
-                id={name}
-                type={type}
-                placeholder={placeholder}
-                {...register(name)}
-                className={`w-full px-3 py-2 border ${errors[name] ? 'border-red-500' : 'border-gray-300'} placeholder-gray-500 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 sm:text-sm`}
-                {...rest}
-            />
-            {errors[name] && <p className="mt-1 text-xs text-red-500">{errors[name]?.message}</p>}
+}) => {
+    // 현재 필드의 오류만 표시해야 할 때 (firstErrorKey가 현재 필드 이름과 일치할 때)
+    const shouldDisplayError = firstErrorKey === name;
+
+    return (
+        <div className="flex items-center space-x-4">
+            <label htmlFor={name} className="flex-shrink-0 w-24 text-sm font-medium text-gray-700">
+                {label}
+            </label>
+            <div className="flex-1">
+                <input
+                    id={name}
+                    type={type}
+                    placeholder={placeholder}
+                    {...register(name)}
+                    // firstErrorKey가 현재 필드이거나, 해당 필드에 에러가 없으면 기본 border 색상 유지
+                    className={`w-full px-3 py-2 border ${shouldDisplayError ? 'border-red-500' : 'border-gray-300'} placeholder-gray-500 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 sm:text-sm`}
+                    {...rest}
+                />
+                {/* 첫 번째 오류인 경우에만 메시지 표시 */}
+                {shouldDisplayError && errors[name] && <p className="mt-1 text-xs text-red-500">{errors[name]?.message}</p>}
+            </div>
         </div>
-    </div>
-);
-
-// 이메일 중복체크 타입 정의
-type EmailCheckStatus = 'idle' | 'checking' | 'available' | 'duplicate' | 'error';
-
-// Mockup error 객체 타입 정의
-interface MockError {
-    response: {
-        status: number;
-        data: { message: string }
-    };
-}
+    );
+};
 
 // error가 MockError type인지 확인하는 type guard function
 function isMockError(error: unknown): error is MockError {
@@ -130,8 +128,11 @@ const SignUp: React.FC = () => {
         trigger 
     } = useForm<RegisterFormData>({
         resolver: yupResolver(RegisterSchema),
-        mode: 'onSubmit'
+        mode: 'onSubmit',
+        criteriaMode: "firstError"
     });
+
+    const firstErrorKey = FIELD_ORDER.find(key => errors[key]);
 
     // 이메일 중복 확인 함수
     const checkEmailDuplication = useCallback(async () => {
@@ -309,6 +310,7 @@ const SignUp: React.FC = () => {
                         disabled={isSubmitting}
                         errors={errors}
                         register={register}
+                        firstErrorKey={firstErrorKey}
                     />
 
                     {/* 이름 (Input) */}
@@ -320,6 +322,7 @@ const SignUp: React.FC = () => {
                         disabled={isSubmitting}
                         errors={errors}
                         register={register}
+                        firstErrorKey={firstErrorKey}
                     />
                     
                     {/* 생년월일 (Input type="date") */}
