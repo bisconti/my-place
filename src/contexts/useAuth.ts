@@ -1,13 +1,13 @@
 import { useContext } from "react";
-import type { AuthContextType } from "./AuthTypes";
+import type { AuthContextType } from "../types/user/user.types";
 import { AuthContext } from "./AuthContext";
 
 export const useAuth = (): AuthContextType => {
-    const context = useContext(AuthContext);
+  const context = useContext(AuthContext);
 
-    if (!context) {
-        throw new Error('error!');
-    }
+  if (!context) {
+    throw new Error("error!");
+  }
 
-    return context;
+  return context;
 };

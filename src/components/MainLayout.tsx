@@ -1,13 +1,13 @@
-import Header from "./Header"
-import MainContent from "./MainContent"
+import Header from "./Header";
+import MainContent from "./MainContent";
 
 const MainLayout = () => {
-    return (
-        <>
-            <Header />
-            <MainContent />
-        </>
-    )
-}
+  return (
+    <>
+      <Header />
+      <MainContent />
+    </>
+  );
+};
 
-export default MainLayout
+export default MainLayout;
