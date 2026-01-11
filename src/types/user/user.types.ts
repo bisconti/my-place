@@ -19,9 +19,9 @@ export interface AuthContextType {
 export interface RegisterFormData {
   email: string;
   password: string;
-  name: string;
+  username: string;
   birthDate: string;
-  gender: "MALE" | "FEMALE";
+  gender: "M" | "F";
 }
 
 export interface SignUpInputFieldProps {
@@ -36,11 +36,3 @@ export interface SignUpInputFieldProps {
 
 // 이메일 중복 체크 상태 타입
 export type EmailCheckStatus = "idle" | "checking" | "available" | "duplicate" | "error";
-
-// 회원가입 API 에러 객체 인터페이스
-export interface SignUpError {
-  response: {
-    status: number;
-    data: { message: string };
-  };
-}
