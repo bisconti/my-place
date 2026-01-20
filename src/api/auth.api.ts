@@ -10,3 +10,8 @@ export const checkEmailDup = (email: string) => {
 export const signUp = (data: RegisterFormData) => {
   return axios.post("/auth/signUp", data);
 };
+
+// 이메일 
+export const sendPasswordEmail = (email: string) => {
+  return axios.post("/auth/sendEmail", { email });
+};

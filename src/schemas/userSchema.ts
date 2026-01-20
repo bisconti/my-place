@@ -43,3 +43,20 @@ export const LoginSchema = yup
 
 // 로그인 폼 데이터 타입 추론
 export type LoginFormData = yup.InferType<typeof LoginSchema>;
+
+// 비밀번호 찾기 유효성 스키마 정의
+export const FindPasswordSchema = yup.object({
+  email: yup.string().email("올바른 이메일 형식이 아닙니다.").required("이메일을 입력해 주세요."),
+});
+
+// 비밀번호 변경 유효성 스키마 정의
+export const ResetPasswordSchema = yup.object({
+  password: yup.string().required("새 비밀번호를 입력해주세요.").min(8, "비밀번호는 최소 8자 이상이어야 합니다."),
+  confirmPassword: yup
+    .string()
+    .required("비밀번호 확인을 입력해주세요.")
+    .oneOf([yup.ref("password")], "비밀번호가 일치하지 않습니다."),
+});
+
+// 비밀번호 변경 데이터 타입 추론
+export type ResetPasswordFormData = yup.InferType<typeof ResetPasswordSchema>;

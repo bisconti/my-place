@@ -4,6 +4,8 @@ import MainLayout from "./components/MainLayout";
 import Login from "./components/Login";
 import { AuthProvider } from "./contexts/AuthProvider";
 import SignUp from "./components/SignUp";
+import FindPassword from "./components/FindPassword";
+import ResetPassword from "./components/ResetPassword";
 
 function App() {
   return (
@@ -15,7 +17,8 @@ function App() {
             <Route path="/" element={<MainLayout />} />
             <Route path="/login" element={<Login />} />
             <Route path="/signup" element={<SignUp />} />
-            <Route path="/find-password" element={<h1 className="text-3xl p-8">비밀번호 찾기 페이지</h1>} />
+            <Route path="/find-password" element={<FindPassword />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
           </Routes>
         </div>
       </AuthProvider>
