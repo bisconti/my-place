@@ -176,7 +176,17 @@ const SignUp: React.FC = () => {
             label="이름"
             name="username"
             type="text"
-            placeholder="닉네임으로 사용될 이름"
+            placeholder="이름"
+            disabled={isSubmitting}
+            errors={errors}
+            register={register}
+          />
+
+          <InputField
+            label="닉네임"
+            name="nickname"
+            type="text"
+            placeholder="사용할 닉네임"
             disabled={isSubmitting}
             errors={errors}
             register={register}
@@ -231,6 +241,32 @@ const SignUp: React.FC = () => {
           {isGenderError && errors.gender && (
             <p className="ml-28 -mt-3 text-xs text-red-500">{errors.gender.message}</p>
           )}
+
+          {/* 소개 */}
+          <div className="flex items-start space-x-4">
+            <label htmlFor="bio" className="flex-shrink-0 w-24 text-sm font-medium text-gray-700 pt-2">
+              소개
+            </label>
+
+            <div className="flex-1">
+              <textarea
+                id="bio"
+                rows={3}
+                {...register("bio")}
+                disabled={isSubmitting}
+                placeholder="한 줄 소개를 입력해주세요 (선택)"
+                className={`w-full px-3 py-2 border ${
+                  errors.bio ? "border-red-500" : "border-gray-300"
+                } placeholder-gray-500 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 sm:text-sm`}
+              />
+
+              {errors.bio && <p className="mt-1 text-xs text-red-500">{errors.bio.message}</p>}
+
+              <div className="flex justify-end mt-1">
+                <span className="text-xs text-gray-400">최대 100자</span>
+              </div>
+            </div>
+          </div>
 
           <button
             type="submit"

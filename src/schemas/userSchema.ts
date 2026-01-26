@@ -19,11 +19,17 @@ export const RegisterSchema = yup
       .matches(passwordRegex, passwordMsg)
       .required("비밀번호를 입력하세요."),
     username: yup.string().min(2, "이름은 최소 2자 이상이어야 합니다.").required("이름을 입력하세요."),
+    nickname: yup
+      .string()
+      .required("닉네임을 입력해주세요.")
+      .min(2, "닉네임은 최소 2자 이상 입력해주세요.")
+      .max(20, "닉네임은 최대 20자까지 가능합니다."),
     birthDate: yup
       .string()
       .required("생년월일은 필수 입력 사항입니다.")
       .matches(/^\d{4}-\d{2}-\d{2}$/, "유효한 날짜 형식(YYYY-MM-DD)을 선택해 주세요."),
     gender: yup.string().oneOf(["M", "F"], "성별을 선택해 주세요.").required("성별은 필수 선택 사항입니다."),
+    bio: yup.string().max(100, "소개는 최대 100자까지 가능합니다.").nullable().default(null),
   })
   .required();
 

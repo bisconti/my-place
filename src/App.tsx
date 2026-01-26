@@ -6,6 +6,8 @@ import { AuthProvider } from "./contexts/AuthProvider";
 import SignUp from "./components/SignUp";
 import FindPassword from "./components/FindPassword";
 import ResetPassword from "./components/ResetPassword";
+import MyPage from "./components/mypage/MyPage";
+import EditProfile from "./components/mypage/EditProfile";
 
 function App() {
   return (
@@ -19,6 +21,8 @@ function App() {
             <Route path="/signup" element={<SignUp />} />
             <Route path="/find-password" element={<FindPassword />} />
             <Route path="/reset-password" element={<ResetPassword />} />
+            <Route path="/mypage" element={<MyPage />} />
+            <Route path="/mypage/profile" element={<EditProfile />} />
           </Routes>
         </div>
       </AuthProvider>
