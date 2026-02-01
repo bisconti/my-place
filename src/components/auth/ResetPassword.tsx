@@ -3,9 +3,9 @@ import axios from "axios";
 import { useEffect, useMemo, useState } from "react";
 import { useForm, type SubmitHandler } from "react-hook-form";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import BackButton from "./form/BackButton";
-import { ResetPasswordSchema, type ResetPasswordFormData } from "../schemas/userSchema";
 import { toast } from "react-toastify";
+import { ResetPasswordSchema, type ResetPasswordFormData } from "../../schemas/authSchema";
+import BackButton from "../form/BackButton";
 
 const ResetPassword = () => {
   const navigate = useNavigate();

@@ -3,9 +3,9 @@ import axios from "axios";
 import React, { useState } from "react";
 import { useForm, type SubmitHandler } from "react-hook-form";
 import { Link, useNavigate } from "react-router-dom";
-import { useAuth } from "../contexts/useAuth";
-import BackButton from "./form/BackButton";
-import { LoginSchema, type LoginFormData } from "../schemas/userSchema";
+import { useAuth } from "../../contexts/useAuth";
+import BackButton from "../form/BackButton";
+import { LoginSchema, type LoginFormData } from "../../schemas/authSchema";
 
 const Login = () => {
   const navigate = useNavigate();

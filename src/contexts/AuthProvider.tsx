@@ -1,12 +1,28 @@
-import { useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { AuthContext } from "./AuthContext";
 import type { User } from "../types/user/user.types";
+import { setOnUnauthorized } from "../stores/authStore";
 
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(() => {
     const storedUser = localStorage.getItem("user");
     return storedUser ? JSON.parse(storedUser) : null;
   });
+
+  useEffect(() => {
+    setOnUnauthorized(() => {
+      // 토큰 제거
+      localStorage.removeItem("token");
+
+      localStorage.removeItem("user");
+
+      // user 상태 제거
+      setUser(null);
+
+      alert("세션이 만료되었습니다. 다시 로그인 해주세요.");
+      window.location.href = "/login";
+    });
+  }, []);
 
   const isLoggedIn = !!user;
 

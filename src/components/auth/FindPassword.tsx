@@ -2,8 +2,8 @@ import { yupResolver } from "@hookform/resolvers/yup";
 import axios from "axios";
 import { useState } from "react";
 import { useForm, type SubmitHandler } from "react-hook-form";
-import BackButton from "./form/BackButton";
-import { FindPasswordSchema } from "../schemas/userSchema";
+import { FindPasswordSchema } from "../../schemas/authSchema";
+import BackButton from "../form/BackButton";
 
 interface FindPasswordFormData {
   email: string;
