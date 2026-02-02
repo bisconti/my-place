@@ -1,5 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../contexts/useAuth";
+import toast from "react-hot-toast";
 
 const Header = () => {
   const navigate = useNavigate();
@@ -62,6 +63,7 @@ const Header = () => {
                 <button
                   onClick={() => {
                     logout();
+                    toast.success("로그아웃되었습니다.");
                     navigate("/");
                   }}
                   className="px-4 py-1 text-sm font-medium text-white bg-indigo-600 rounded-full shadow-lg hover:bg-indigo-700 transition duration-150 transform hover:scale-105"

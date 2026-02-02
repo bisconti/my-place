@@ -3,9 +3,9 @@ import axios from "axios";
 import { useEffect, useMemo, useState } from "react";
 import { useForm, type SubmitHandler } from "react-hook-form";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { toast } from "react-toastify";
 import { ResetPasswordSchema, type ResetPasswordFormData } from "../../schemas/authSchema";
 import BackButton from "../form/BackButton";
+import toast from "react-hot-toast";
 
 const ResetPassword = () => {
   const navigate = useNavigate();

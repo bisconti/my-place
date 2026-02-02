@@ -9,12 +9,23 @@ import ResetPassword from "./components/auth/ResetPassword";
 import MyPage from "./components/mypage/MyPage";
 import EditProfile from "./components/mypage/EditProfile";
 import ChangePassword from "./components/mypage/ChangePassword";
+import { Toaster } from "react-hot-toast";
 
 function App() {
   return (
     <BrowserRouter>
       {/* AuthContextProvider로 전체 routing을 감싸서 모든 자식 component가 Context에 접근할 수 있도록 보장 */}
       <AuthProvider>
+        <Toaster
+          position="bottom-right"
+          toastOptions={{
+            duration: 2000,
+            style: {
+              borderRadius: "10px",
+              fontSize: "14px",
+            },
+          }}
+        />
         <div className="min-h-screen bg-gray-50">
           <Routes>
             <Route path="/" element={<MainLayout />} />

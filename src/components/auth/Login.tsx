@@ -44,14 +44,8 @@ const Login = () => {
       console.error("로그인 실패", error);
 
       if (axios.isAxiosError(error) && error.response) {
-        const status = error.response.status;
-
         const result = error.response.data as { message?: string };
-
-        if (status === 401) {
-          // 인증 실패
-          setAuthError(result.message || "이메일 또는 비밀번호를 확인하세요.");
-        }
+        setAuthError(result.message || "로그인에 실패했습니다.");
       } else {
         setAuthError("네트워크 연결 또는 서버에 문제가 있습니다.");
       }

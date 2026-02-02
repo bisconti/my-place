@@ -2,12 +2,12 @@ import React, { useState } from "react";
 import { useForm, type SubmitHandler } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import { useNavigate } from "react-router-dom";
-import { toast } from "react-toastify";
 import BackButton from "../form/BackButton";
 import InputField from "../share/InputField";
 import { signUp } from "../../api/auth.api";
 import { useEmailDuplication } from "../../hooks/useEmailDuplication";
 import { RegisterSchema, type RegisterFormData } from "../../schemas/authSchema";
+import toast from "react-hot-toast";
 
 const SignUp: React.FC = () => {
   const navigate = useNavigate();

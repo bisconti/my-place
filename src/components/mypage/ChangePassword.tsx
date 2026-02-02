@@ -7,6 +7,7 @@ import BackButton from "../form/BackButton";
 import { useAuth } from "../../contexts/useAuth";
 import { api } from "../../api/api";
 import { ChangePasswordSchema, type ChangePasswordFormData } from "../../schemas/userSchema";
+import toast from "react-hot-toast";
 
 type ChangePasswordResponse = {
   message: string;
@@ -59,6 +60,7 @@ const ChangePassword = () => {
         confirmPassword: "",
       });
 
+      toast.success("비밀번호가 변경 되었습니다.");
       navigate("/mypage");
     } catch (error) {
       console.error("비밀번호 변경 실패", error);
