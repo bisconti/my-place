@@ -15,7 +15,7 @@ const Header = () => {
           {/* 로고/사이트 이름 */}
           <div className="flex-shrink-0">
             <a href="/" className="text-2xl font-bold text-red-600 hover:text-red-700">
-              식신 따라하기
+              먹탐
             </a>
           </div>
 
