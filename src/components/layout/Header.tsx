@@ -6,9 +6,9 @@ import { useAuth } from "../../contexts/useAuth";
 /** =========================
  * Config
  * ========================= */
-const TOKEN_KEY = "token"; // ✅ 네 localStorage 키
+const TOKEN_KEY = "token";
 const LAST_ACTIVITY_KEY = "lastActivityAt";
-const IDLE_TIMEOUT_SEC = 15 * 60; // ✅ 15분
+const IDLE_TIMEOUT_SEC = 15 * 60;
 
 /** =========================
  * Utils
@@ -62,10 +62,10 @@ const Header = () => {
 
   const [leftSec, setLeftSec] = useState<number | null>(null);
 
-  // ✅ 만료 처리 중복 방지
+  // 만료 처리 중복 방지
   const expiredHandledRef = useRef(false);
 
-  // ✅ 활동 기록 저장 과도 방지(1초에 1번만)
+  // 활동 기록 저장 과도 방지
   const lastWriteRef = useRef(0);
 
   const touchActivity = () => {
@@ -90,13 +90,10 @@ const Header = () => {
     touchActivity();
   }, [user]);
 
-  /** =========================
-   * 페이지 이동도 "활동"으로 처리
-   * ========================= */
+  // 활동 처리
   useEffect(() => {
     if (!user) return;
     touchActivity();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [location.pathname, user]);
 
   /** =========================
@@ -107,7 +104,7 @@ const Header = () => {
 
     const onActivity = () => touchActivity();
 
-    // ✅ scroll/touch 이벤트는 passive로 (콘솔 경고 완화)
+    // scroll/touch 이벤트는 passive로
     window.addEventListener("click", onActivity);
     window.addEventListener("keydown", onActivity);
     window.addEventListener("mousemove", onActivity);
@@ -118,9 +115,8 @@ const Header = () => {
       window.removeEventListener("click", onActivity);
       window.removeEventListener("keydown", onActivity);
       window.removeEventListener("mousemove", onActivity);
-      // removeEventListener는 options 없이도 제거됨(같은 handler면 OK)
-      window.removeEventListener("scroll", onActivity as any);
-      window.removeEventListener("touchstart", onActivity as any);
+      window.removeEventListener("scroll", onActivity);
+      window.removeEventListener("touchstart", onActivity);
     };
   }, [user]);
 
@@ -227,7 +223,7 @@ const Header = () => {
               </button>
             )}
 
-            {/* ✅ 세션(유휴/토큰) 남은시간 배지 + 사람 아이콘(디자인 유지) */}
+            {/* 세션(유휴/토큰) 남은시간 배지 + 사람 아이콘(디자인 유지) */}
             <div className="flex items-center gap-2">
               {user && leftSec !== null && (
                 <div

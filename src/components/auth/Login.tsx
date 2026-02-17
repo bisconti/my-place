@@ -35,10 +35,13 @@ const Login = () => {
       const res = await axios.post("auth/login", data);
       console.log(res.data);
       // 로그인 성공 시 Context의 login 함수를 사용하여 상태 업데이트 및 localStroage에 저장
-      const { user, token } = res.data;
+      const { user, token, refreshToken } = res.data;
       login(user, token);
 
-      console.log("로그인 성공", res.data.user);
+      localStorage.setItem("token", token);
+      if (refreshToken) {
+        localStorage.setItem("refreshToken", refreshToken);
+      }
       navigate("/");
     } catch (error) {
       console.error("로그인 실패", error);
