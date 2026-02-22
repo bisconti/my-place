@@ -1,12 +1,14 @@
 import { useEffect, useRef } from "react";
-import { api } from "../api/api"; // 네 경로에 맞게
+import { api } from "../api/api";
 import { runOnUnauthorized } from "../stores/authStore";
 
 const getJwtLeftSec = () => {
   const token = localStorage.getItem("token");
   if (!token) return 0;
+
   try {
     const payload = JSON.parse(atob(token.split(".")[1]));
+    // exp: seconds
     return Math.floor(payload.exp - Date.now() / 1000);
   } catch {
     return 0;
@@ -18,6 +20,15 @@ export function useAuthAutoRefresh() {
 
   useEffect(() => {
     const onActivity = async () => {
+      const token = localStorage.getItem("token");
+      const refreshToken = localStorage.getItem("refreshToken");
+
+      // 새 탭/새 창에서 localStorage만 남아 있는 상태를 구분하기 위한 플래그
+      const hadAuthSession = sessionStorage.getItem("hadAuthSession") === "1";
+
+      // 토큰/리프레시토큰이 둘 다 없으면 이미 로그아웃 상태
+      if (!token && !refreshToken) return;
+
       const left = getJwtLeftSec();
 
       // 5분 이상 남았으면 아무것도 안 함
@@ -28,8 +39,10 @@ export function useAuthAutoRefresh() {
       lastRefreshAt.current = Date.now();
 
       try {
-        // 쿠키 방식이면 body 없이, localStorage 방식이면 refreshToken body 포함 필요
-        const refreshToken = localStorage.getItem("refreshToken");
+        /**
+         * refresh 호출
+         * - api 인스턴스를 쓰면, api.ts의 인터셉터/로깅/정책과 일관되게 동작
+         */
         const res = await api.post("/auth/refresh", refreshToken ? { refreshToken } : undefined);
 
         const newAccessToken = res.data?.accessToken;
@@ -37,9 +50,20 @@ export function useAuthAutoRefresh() {
 
         const newRefreshToken = res.data?.refreshToken;
         if (newRefreshToken) localStorage.setItem("refreshToken", newRefreshToken);
+
+        /**
+         * refresh 성공은 "이 탭에서 인증이 성공"한 것이므로 탭 플래그 기록
+         * (새 탭에서도 토큰이 유효하면 이후부터는 일반 세션처럼 취급)
+         */
+        sessionStorage.setItem("hadAuthSession", "1");
       } catch (e) {
         console.log(e);
-        runOnUnauthorized();
+
+        /**
+         * - 새 탭/재접속(이 탭에서 인증 성공 이력이 없음): silent logout (alert/리다이렉트 X)
+         * - 사용 중 세션(인증 성공 이력이 있음): non-silent (alert + /login)
+         */
+        runOnUnauthorized({ silent: !hadAuthSession });
       }
     };
 
