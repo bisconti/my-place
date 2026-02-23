@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { AuthContext } from "./AuthContext";
 import type { User } from "../types/user/user.types";
-import { setOnUnauthorized } from "../stores/authStore";
+import { setOnUnauthorized, useAuthStore } from "../stores/authStore";
 
 type UnauthorizedOptions = {
   silent?: boolean; // true면 안내/리다이렉트 없이 로그아웃만
@@ -20,6 +20,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       localStorage.removeItem("user");
       localStorage.removeItem("refreshToken");
       sessionStorage.removeItem("hadAuthSession");
+      useAuthStore.getState().setAuthenticated(false);
 
       // user 상태 제거
       setUser(null);

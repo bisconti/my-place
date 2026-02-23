@@ -6,6 +6,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../../contexts/useAuth";
 import BackButton from "../form/BackButton";
 import { LoginSchema, type LoginFormData } from "../../schemas/authSchema";
+import { useAuthStore } from "../../stores/authStore";
 
 const Login = () => {
   const navigate = useNavigate();
@@ -37,8 +38,10 @@ const Login = () => {
       // 로그인 성공 시 Context의 login 함수를 사용하여 상태 업데이트 및 localStroage에 저장
       const { user, token, refreshToken } = res.data;
       login(user, token);
-
       localStorage.setItem("token", token);
+      localStorage.setItem("refreshToken", refreshToken);
+      useAuthStore.getState().setAuthenticated(true);
+
       if (refreshToken) {
         localStorage.setItem("refreshToken", refreshToken);
       }

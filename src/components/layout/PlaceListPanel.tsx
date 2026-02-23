@@ -21,9 +21,10 @@ type Props = {
   selectedId: string | null;
   onSelect: (id: string) => void;
   onToggleLike: (id: string) => void;
+  isLoggedIn: boolean;
 };
 
-export default function PlaceListPanel({ places, loading, selectedId, onSelect, onToggleLike }: Props) {
+export default function PlaceListPanel({ places, loading, selectedId, onSelect, onToggleLike, isLoggedIn }: Props) {
   return (
     <section className="lg:col-span-4 xl:col-span-3 h-full min-h-0 border rounded-lg overflow-hidden flex flex-col">
       <div className="p-3 border-b flex items-center justify-between shrink-0">
@@ -54,28 +55,30 @@ export default function PlaceListPanel({ places, loading, selectedId, onSelect, 
                   </div>
                 </div>
 
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onToggleLike(p.id);
-                  }}
-                  className="shrink-0 p-2 rounded-full hover:bg-gray-100 active:scale-95 transition inline-flex items-center justify-center leading-none"
-                  aria-label={p.liked ? "찜 해제" : "찜 하기"}
-                  title={p.liked ? "찜 해제" : "찜 하기"}
-                >
-                  <svg viewBox="0 0 24 24" className="w-5 h-5 block" aria-hidden="true">
-                    <path
-                      d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"
-                      fill={p.liked ? "currentColor" : "none"}
-                      stroke={p.liked ? "none" : "currentColor"}
-                      strokeWidth={p.liked ? undefined : 1.8}
-                      strokeLinejoin="round"
-                      strokeLinecap="round"
-                      className={p.liked ? "text-red-600" : "text-gray-400"}
-                    />
-                  </svg>
-                </button>
+                {isLoggedIn && (
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onToggleLike(p.id);
+                    }}
+                    className="shrink-0 p-2 rounded-full hover:bg-gray-100 active:scale-95 transition inline-flex items-center justify-center leading-none"
+                    aria-label={p.liked ? "찜 해제" : "찜 하기"}
+                    title={p.liked ? "찜 해제" : "찜 하기"}
+                  >
+                    <svg viewBox="0 0 24 24" className="w-5 h-5 block" aria-hidden="true">
+                      <path
+                        d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"
+                        fill={p.liked ? "currentColor" : "none"}
+                        stroke={p.liked ? "none" : "currentColor"}
+                        strokeWidth={p.liked ? undefined : 1.8}
+                        strokeLinejoin="round"
+                        strokeLinecap="round"
+                        className={p.liked ? "text-red-600" : "text-gray-400"}
+                      />
+                    </svg>
+                  </button>
+                )}
               </div>
             </div>
           );

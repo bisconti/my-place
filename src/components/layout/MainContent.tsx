@@ -2,6 +2,7 @@ import { useState } from "react";
 import PlaceListPanel from "./PlaceListPanel";
 import MapPanel from "./MapPanel";
 import { useKakaoPlaceMap } from "../../hooks/useKakaoPlaceMap";
+import { useAuthStore } from "../../stores/authStore";
 
 export default function MainContent() {
   const [pendingKeyword, setPendingKeyword] = useState("");
@@ -19,6 +20,8 @@ export default function MainContent() {
     toggleLike,
   } = useKakaoPlaceMap();
 
+  const isLoggedIn = useAuthStore((s) => s.isAuthenticated);
+
   return (
     <div className="h-full min-h-0 w-full px-4 py-4">
       {/* (먹탐 헤더는 상위 레이아웃에서) */}
@@ -29,6 +32,7 @@ export default function MainContent() {
           selectedId={selectedId}
           onSelect={setSelectedId}
           onToggleLike={toggleLike}
+          isLoggedIn={isLoggedIn}
         />
 
         <div className="lg:col-span-8 xl:col-span-9 h-full min-h-0 flex flex-col gap-3">
