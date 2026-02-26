@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import BackButton from "../form/BackButton";
-import { useAuth } from "../../contexts/useAuth";
+import { useAuth } from "../../hooks/useAuth";
 
 const MyPage = () => {
   const navigate = useNavigate();

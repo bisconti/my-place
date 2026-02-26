@@ -3,7 +3,7 @@ import axios from "axios";
 import React, { useState } from "react";
 import { useForm, type SubmitHandler } from "react-hook-form";
 import { Link, useNavigate } from "react-router-dom";
-import { useAuth } from "../../contexts/useAuth";
+import { useAuth } from "../../hooks/useAuth";
 import BackButton from "../form/BackButton";
 import { LoginSchema, type LoginFormData } from "../../schemas/authSchema";
 import { useAuthStore } from "../../stores/authStore";

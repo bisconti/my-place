@@ -1,29 +1,34 @@
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+/*
+  파일명: AuthProvider.tsx
+  기능 
+  - zustand 에서 auth state/action을 가져와서 AuthContext로 내려줌.
+  - 어플리케이션 기동 시 hydrate()로 localStorage 기반 복구
+  - 401에러/세션만료 처리를 setOnUnauthorized 에 등록해서 만료시 store.logout() 실행
+  - zustand를 Context 형태로 노출하는 bridge 역할
+*/
+import { useEffect, useMemo, type ReactNode } from "react";
 import { AuthContext } from "./AuthContext";
 import type { User } from "../types/user/user.types";
 import { setOnUnauthorized, useAuthStore } from "../stores/authStore";
 
 type UnauthorizedOptions = {
-  silent?: boolean; // true면 안내/리다이렉트 없이 로그아웃만
+  silent?: boolean;
 };
 
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(() => {
-    const storedUser = localStorage.getItem("user");
-    return storedUser ? JSON.parse(storedUser) : null;
-  });
+  const user = useAuthStore((s) => s.user);
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const loginStore = useAuthStore((s) => s.login);
+  const logoutStore = useAuthStore((s) => s.logout);
+  const setUserStore = useAuthStore((s) => s.setUser);
+
+  const hydrate = useAuthStore((s) => s.hydrate);
 
   useEffect(() => {
-    setOnUnauthorized((opts?: UnauthorizedOptions) => {
-      // 토큰 제거
-      localStorage.removeItem("token");
-      localStorage.removeItem("user");
-      localStorage.removeItem("refreshToken");
-      sessionStorage.removeItem("hadAuthSession");
-      useAuthStore.getState().setAuthenticated(false);
+    hydrate();
 
-      // user 상태 제거
-      setUser(null);
+    setOnUnauthorized((opts?: UnauthorizedOptions) => {
+      logoutStore();
 
       if (opts?.silent) return;
 
@@ -32,33 +37,23 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     });
   }, []);
 
-  const isLoggedIn = !!user;
+  const isLoggedIn = !!user && isAuthenticated;
 
-  const login = (userData: User, token: string) => {
-    localStorage.setItem("user", JSON.stringify(userData));
-    localStorage.setItem("token", token);
-
-    // 이 탭에서 "인증 성공"을 실제로 경험했음을 기록
-    sessionStorage.setItem("hadAuthSession", "1");
-
-    setUser(userData);
+  const login = (userData: User, token: string, refreshToken?: string) => {
+    loginStore(userData, token, refreshToken);
   };
 
   const logout = () => {
-    localStorage.removeItem("user");
-    localStorage.removeItem("token");
-    localStorage.removeItem("refreshToken");
-    sessionStorage.removeItem("hadAuthSession");
-    setUser(null);
+    logoutStore();
   };
 
   const updateUser = (partial: Partial<User>) => {
-    setUser((prev) => {
-      if (!prev) return prev;
-      const next = { ...prev, ...partial };
-      localStorage.setItem("user", JSON.stringify(next));
-      return next;
-    });
+    if (!user) return;
+    const next = { ...user, ...partial } as User;
+
+    setUserStore(next);
+
+    localStorage.setItem("user", JSON.stringify(next));
   };
 
   const value = useMemo(

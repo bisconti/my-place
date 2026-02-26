@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
-import { useAuth } from "../../contexts/useAuth";
+import { useAuthStore } from "../../stores/authStore";
 
 /** =========================
  * Config
@@ -58,7 +58,9 @@ const getIdleLeftSec = (): number => {
 const Header = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { user, logout } = useAuth();
+
+  const user = useAuthStore((s) => s.user);
+  const logout = useAuthStore((s) => s.logout);
 
   const [leftSec, setLeftSec] = useState<number | null>(null);
 

@@ -5,7 +5,7 @@ import { useForm, type SubmitHandler } from "react-hook-form";
 import { useNavigate } from "react-router-dom";
 import * as yup from "yup";
 import BackButton from "../form/BackButton";
-import { useAuth } from "../../contexts/useAuth";
+import { useAuth } from "../../hooks/useAuth";
 import { api } from "../../api/api";
 
 type EditProfileFormData = {

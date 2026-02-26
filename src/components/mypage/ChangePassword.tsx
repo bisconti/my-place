@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import { useForm, type SubmitHandler } from "react-hook-form";
 import { useNavigate } from "react-router-dom";
 import BackButton from "../form/BackButton";
-import { useAuth } from "../../contexts/useAuth";
+import { useAuth } from "../../hooks/useAuth";
 import { api } from "../../api/api";
 import { ChangePasswordSchema, type ChangePasswordFormData } from "../../schemas/userSchema";
 import toast from "react-hot-toast";
