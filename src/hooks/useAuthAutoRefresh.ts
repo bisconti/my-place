@@ -1,3 +1,8 @@
+/*
+  파일명: useAuthAutoRefresh.ts
+  기능 
+  - 사용자가 앱을 쓰고 있는 동안(클릭/키보드/마우스) 토큰 만료가 임박하면 자동으로 refresh를 호출해서 access token을 갱신하고, 실패하면 상황에 맞게 로그아웃 처리
+*/
 import { useEffect, useRef } from "react";
 import { api } from "../api/api";
 import { runOnUnauthorized } from "../stores/authStore";

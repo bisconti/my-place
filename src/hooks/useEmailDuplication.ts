@@ -1,3 +1,8 @@
+/*
+  파일명: useEmailDuplication.ts
+  기능 
+  - 이메일 중복 체크
+*/
 import { useState, useCallback } from "react";
 import axios from "axios";
 import type { EmailCheckStatus } from "../types/user/user.types";
