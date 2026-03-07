@@ -2,6 +2,8 @@ import axios from "axios";
 import type { AxiosError, AxiosRequestConfig, AxiosRequestHeaders } from "axios";
 import { isDuringBoot, runOnUnauthorized } from "../stores/authStore";
 
+console.log("VITE_API_BASE_URL =", import.meta.env.VITE_API_BASE_URL);
+
 export const api = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL ?? "",
   // withCredentials: true,

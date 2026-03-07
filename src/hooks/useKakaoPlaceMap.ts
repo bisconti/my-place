@@ -1,4 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { fetchMyLikeIds, togglePlaceLike } from "../api/placeLike.api";
+import { useAuthStore } from "../stores/authStore";
 
 /** =========================
  * Domain types
@@ -119,7 +121,7 @@ type UseKakaoPlaceMapReturn = {
   goMyLocation: () => void;
   search: (keyword: string) => Promise<void>;
 
-  toggleLike: (id: string) => void;
+  toggleLike: (id: string) => Promise<void>;
 };
 
 export function useKakaoPlaceMap(): UseKakaoPlaceMapReturn {
@@ -139,6 +141,42 @@ export function useKakaoPlaceMap(): UseKakaoPlaceMapReturn {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [needRefetch, setNeedRefetch] = useState(false);
+
+  const isLoggedIn = useAuthStore((s) => s.isAuthenticated);
+  const [likedIds, setLikedIds] = useState<Set<string>>(new Set());
+
+  // 내 찜 목록 식당 상태값 업데이트
+  useEffect(() => {
+    if (!isLoggedIn) {
+      setLikedIds(new Set());
+      return;
+    }
+
+    (async () => {
+      try {
+        const res = await fetchMyLikeIds();
+        console.log(res);
+        const set = new Set(res.data.items.map((x) => String(x.placeId)));
+        console.log(set);
+        setLikedIds(set);
+      } catch (e) {
+        console.error(e);
+        setLikedIds(new Set());
+      }
+    })();
+  }, [isLoggedIn]);
+
+  // 내 찜 목록 식당 상태값 업데이트 시 실제 식당 목록에 찜 아이콘 반영
+  useEffect(() => {
+    if (places.length === 0) return;
+
+    setPlaces((prev) =>
+      prev.map((p) => ({
+        ...p,
+        liked: likedIds.has(String(p.id)),
+      }))
+    );
+  }, [likedIds]);
 
   /** 마커/인포윈도우 */
   const openInfo = useCallback((p: Place) => {
@@ -221,7 +259,7 @@ export function useKakaoPlaceMap(): UseKakaoPlaceMapReturn {
               resolve();
               return;
             }
-
+            console.log(likedIds);
             const items: Place[] = data
               .filter((d) => {
                 const lat = Number(d.y);
@@ -236,7 +274,7 @@ export function useKakaoPlaceMap(): UseKakaoPlaceMapReturn {
                 lat: Number(d.y),
                 lng: Number(d.x),
                 distanceM: d.distance ? Number(d.distance) : undefined,
-                liked: false,
+                liked: likedIds.has(String(d.id)),
               }));
 
             setPlaces(items);
@@ -249,13 +287,42 @@ export function useKakaoPlaceMap(): UseKakaoPlaceMapReturn {
         );
       });
     },
-    [keyword, renderMarkers]
+    [keyword, renderMarkers, likedIds]
   );
 
-  /** public actions */
-  const toggleLike = useCallback((id: string) => {
-    setPlaces((prev) => prev.map((p) => (p.id === id ? { ...p, liked: !p.liked } : p)));
-  }, []);
+  const toggleLike = useCallback(
+    async (id: string) => {
+      const target = places.find((p) => p.id === id);
+      if (!target) return;
+
+      const prevLiked = target.liked ?? false;
+      const nextLiked = !prevLiked;
+
+      // optimistic UI
+      setPlaces((prev) => prev.map((p) => (p.id === id ? { ...p, liked: nextLiked } : p)));
+
+      try {
+        const res = await togglePlaceLike(target, nextLiked);
+
+        // likedIds 업데이트
+        setLikedIds((prev) => {
+          const next = new Set(prev);
+          if (res.data.liked) next.add(id);
+          else next.delete(id);
+          return next;
+        });
+
+        // UI 동기화
+        setPlaces((prev) => prev.map((p) => (p.id === id ? { ...p, liked: res.data.liked } : p)));
+      } catch (e) {
+        // rollback
+        setPlaces((prev) => prev.map((p) => (p.id === id ? { ...p, liked: prevLiked } : p)));
+        console.error(e);
+        alert("찜 처리에 실패했어요. 잠시 후 다시 시도해주세요.");
+      }
+    },
+    [places]
+  );
 
   const search = useCallback(
     async (kw: string) => {

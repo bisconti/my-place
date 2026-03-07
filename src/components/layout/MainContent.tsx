@@ -24,7 +24,6 @@ export default function MainContent() {
 
   return (
     <div className="h-full min-h-0 w-full px-4 py-4">
-      {/* (먹탐 헤더는 상위 레이아웃에서) */}
       <div className="grid h-full min-h-0 grid-cols-1 gap-4 lg:grid-cols-12">
         <PlaceListPanel
           places={places}
@@ -36,8 +35,6 @@ export default function MainContent() {
         />
 
         <div className="lg:col-span-8 xl:col-span-9 h-full min-h-0 flex flex-col gap-3">
-          {/* 검색/내주변은 상단 헤더에 이미 있으면 거기로 옮기는 게 더 자연스럽고,
-              아니면 여기 위에 툴바로 넣어도 됨 */}
           <div className="flex items-center gap-2">
             <form
               onSubmit={(e) => {
