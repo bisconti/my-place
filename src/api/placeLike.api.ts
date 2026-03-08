@@ -1,22 +1,11 @@
+/*
+  파일명: placesLike.api.ts
+  기능 
+  - 식당 찜 등록/취소, 찜 목록 조회 API 모음
+*/
 import { api } from "./api";
 import type { Place } from "../components/layout/PlaceListPanel";
-
-export type PlaceLikeToggleRequest = {
-  placeId: string;
-  placeName?: string;
-  address?: string;
-  category?: string;
-  liked: boolean;
-};
-
-export type PlaceLikeResponse = {
-  placeId: string;
-  liked: boolean;
-  createdAt?: string | null;
-  placeName?: string;
-  address?: string;
-  category?: string;
-};
+import type { PlaceLikeResponse, PlaceLikeToggleRequest } from "../types/user/placeLike.types";
 
 // 찜 등록 / 취소
 export const togglePlaceLike = (p: Place, nextLiked: boolean) => {
@@ -34,4 +23,9 @@ export const togglePlaceLike = (p: Place, nextLiked: boolean) => {
 // 내 찜 목록 조회
 export const fetchMyLikeIds = () => {
   return api.get<{ items: Array<{ placeId: string }> }>("/api/place-likes/me");
+};
+
+// 내 찜 목록 건수 조회
+export const getMyPlaceLikeCount = () => {
+  return api.get<number>("/api/place-likes/count");
 };

@@ -1,17 +1,14 @@
-import { http } from "./http";
+/*
+  파일명: user.api.ts
+  기능 
+  - 로그인 사용자의 내 프로필 조회, 정보 수정 등 관련 API 요청 모음
+*/
+import { api } from "./api";
+import type { MyProfileResponse, UpdateMyProfileRequest } from "../types/user/user.types";
 
-export type MyProfileResponse = {
-  useremail: string;
-  nickname: string;
-  bio: string | null;
-};
+// 내 프로필 조회
+export const getMyProfile = () => api.get<MyProfileResponse>("/user/me");
 
-export type UpdateMyProfileRequest = {
-  nickname: string;
-  bio: string | null;
-};
-
-export const getMyProfile = () => http.get<MyProfileResponse>("/user/me");
-
+// 내 프로필 수정
 export const updateMyProfile = (data: UpdateMyProfileRequest) =>
-  http.put<MyProfileResponse & { message?: string }>("/user/me", data);
+  api.put<MyProfileResponse & { message?: string }>("/user/me", data);
