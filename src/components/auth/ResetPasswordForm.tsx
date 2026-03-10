@@ -1,13 +1,19 @@
+/*
+  파일명: ResetPasswordForm.tsx
+  describe
+  - 비밀번호 재설정 component
+*/
 import { yupResolver } from "@hookform/resolvers/yup";
-import axios from "axios";
 import { useEffect, useMemo, useState } from "react";
 import { useForm, type SubmitHandler } from "react-hook-form";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { ResetPasswordSchema, type ResetPasswordFormData } from "../../schemas/authSchema";
-import BackButton from "../form/BackButton";
 import toast from "react-hot-toast";
 
-const ResetPassword = () => {
+import { ResetPasswordSchema, type ResetPasswordFormData } from "../../schemas/authSchema";
+import { resetPassword, validateResetPasswordToken } from "../../api/auth.api";
+import BackButton from "../form/BackButton";
+
+const ResetPasswordForm = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const token = searchParams.get("token");
@@ -27,34 +33,49 @@ const ResetPassword = () => {
     mode: "onSubmit",
   });
 
-  // 토큰 기본 체크 + (선택) 서버 검증 자리
+  // 토큰 기본 체크 + 서버 검증
   useEffect(() => {
-    setApiError(null);
-    setTokenError(null);
+    const checkToken = async () => {
+      setApiError(null);
+      setTokenError(null);
 
-    if (!token) {
-      setTokenError("유효하지 않은 재설정 링크입니다. 메일을 다시 요청해주세요.");
-      setIsTokenChecking(false);
-      return;
-    }
+      if (!token?.trim()) {
+        setTokenError("유효하지 않은 재설정 링크입니다. 메일을 다시 요청해주세요.");
+        setIsTokenChecking(false);
+        return;
+      }
 
-    // 토큰 검증
-    axios
-      .get("/auth/reset-password/validate", { params: { token } })
-      .then(() => setIsTokenChecking(false))
-      .catch((err) => {
-        const msg =
-          axios.isAxiosError(err) && err.response?.data?.message
-            ? err.response.data.message
-            : "재설정 링크가 만료되었거나 유효하지 않습니다.";
+      try {
+        await validateResetPasswordToken(token.trim());
+        setIsTokenChecking(false);
+      } catch (err: unknown) {
+        let msg = "재설정 링크가 만료되었거나 유효하지 않습니다.";
+
+        if (
+          typeof err === "object" &&
+          err !== null &&
+          "response" in err &&
+          typeof err.response === "object" &&
+          err.response !== null &&
+          "data" in err.response &&
+          typeof err.response.data === "object" &&
+          err.response.data !== null &&
+          "message" in err.response.data &&
+          typeof err.response.data.message === "string"
+        ) {
+          msg = err.response.data.message;
+        }
 
         setTokenError(msg);
         setIsTokenChecking(false);
-      });
+      }
+    };
+
+    checkToken();
   }, [token]);
 
   const onSubmit: SubmitHandler<ResetPasswordFormData> = async (data) => {
-    if (!token) {
+    if (!token?.trim()) {
       setTokenError("유효하지 않은 재설정 링크입니다. 메일을 다시 요청해주세요.");
       return;
     }
@@ -63,41 +84,54 @@ const ResetPassword = () => {
     setApiError(null);
 
     try {
-      await axios.post("/auth/reset-password", {
-        token,
-        newPassword: data.password,
-      });
+      await resetPassword(token.trim(), data.password);
 
       toast.success("비밀번호 변경이 완료되었습니다");
       navigate("/login");
-    } catch (error) {
-      console.error("비밀번호 재설정 실패", error);
+    } catch (err: unknown) {
+      console.error("비밀번호 재설정 실패", err);
 
-      if (axios.isAxiosError(error) && error.response) {
-        const status = error.response.status;
-        const result = error.response.data as { message?: string };
+      let message = "비밀번호 변경에 실패했습니다. 다시 시도해주세요.";
 
-        // 백엔드에서 token 만료/사용됨 등을 400/401/404로 내려줄 때 대응
+      if (
+        typeof err === "object" &&
+        err !== null &&
+        "response" in err &&
+        typeof err.response === "object" &&
+        err.response !== null
+      ) {
+        const response = err.response as {
+          status?: number;
+          data?: { message?: string };
+        };
+
+        const status = response.status;
+        const serverMessage = response.data?.message;
+
         if (status === 400 || status === 401 || status === 404) {
-          setApiError(result.message || "재설정 링크가 만료되었거나 유효하지 않습니다.");
+          message = serverMessage || "재설정 링크가 만료되었거나 유효하지 않습니다.";
         } else {
-          setApiError(result.message || "비밀번호 변경에 실패했습니다. 다시 시도해주세요.");
+          message = serverMessage || "비밀번호 변경에 실패했습니다. 다시 시도해주세요.";
         }
       } else {
-        setApiError("네트워크 연결 또는 서버에 문제가 있습니다.");
+        message = "네트워크 연결 또는 서버에 문제가 있습니다.";
       }
+
+      setApiError(message);
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  // Login과 동일한 “첫 에러 메시지” 방식
+  // 첫 번째 에러 메시지 추출
   const handleErrorMsg = useMemo(() => {
     const errorKeys = Object.keys(errors);
+
     if (errorKeys.length > 0) {
       const errorKey = errorKeys[0] as keyof ResetPasswordFormData;
       return errors[errorKey]?.message;
     }
+
     return null;
   }, [errors]);
 
@@ -151,7 +185,6 @@ const ResetPassword = () => {
               />
             </div>
 
-            {/* 오류 메시지 (Login과 동일한 위치/스타일) */}
             {pageErrorMsg && (
               <div className="pt-2">
                 <p className="text-xs text-red-500 text-center w-full">{pageErrorMsg}</p>
@@ -185,7 +218,6 @@ const ResetPassword = () => {
               )}
             </button>
 
-            {/* 토큰이 잘못된 경우 보조 안내 */}
             {!!tokenError && (
               <div className="text-center text-sm text-gray-500">비밀번호 찾기 페이지에서 다시 요청해주세요.</div>
             )}
@@ -196,4 +228,4 @@ const ResetPassword = () => {
   );
 };
 
-export default ResetPassword;
+export default ResetPasswordForm;

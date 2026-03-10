@@ -1,15 +1,18 @@
+/*
+  파일명: FindPasswordForm.tsx
+  describe
+  - 비밀번호 찾기 component
+*/
 import { yupResolver } from "@hookform/resolvers/yup";
-import axios from "axios";
 import { useState } from "react";
 import { useForm, type SubmitHandler } from "react-hook-form";
+
 import { FindPasswordSchema } from "../../schemas/authSchema";
+import { sendPasswordEmail } from "../../api/auth.api";
 import BackButton from "../form/BackButton";
+import type { FindPasswordFormData } from "../../types/user/user.types";
 
-interface FindPasswordFormData {
-  email: string;
-}
-
-const FindPassword = () => {
+const FindPasswordForm = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [apiMessage, setApiMessage] = useState<string | null>(null);
   const [isSuccess, setIsSuccess] = useState(false);
@@ -28,13 +31,16 @@ const FindPassword = () => {
     setApiMessage(null);
 
     try {
-      await axios.post("/auth/find-password", data);
+      await sendPasswordEmail(data.email.trim());
 
       // 보안상 성공/실패 여부를 명확히 구분하지 않는 것이 일반적
       setIsSuccess(true);
       setApiMessage("입력하신 이메일로 비밀번호 재설정 안내 메일을 발송했습니다.");
     } catch (error) {
-      console.error(error);
+      console.error("비밀번호 재설정 메일 발송 실패", error);
+
+      // 보안상 동일 메시지 반환
+      setIsSuccess(true);
       setApiMessage("입력하신 이메일로 비밀번호 재설정 안내 메일을 발송했습니다.");
     } finally {
       setIsSubmitting(false);
@@ -91,4 +97,4 @@ const FindPassword = () => {
   );
 };
 
-export default FindPassword;
+export default FindPasswordForm;

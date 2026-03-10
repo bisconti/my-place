@@ -21,3 +21,16 @@ export const ChangePasswordSchema = yup.object({
 
 // 비밀번호 변경 데이터 타입 추론
 export type ChangePasswordFormData = yup.InferType<typeof ChangePasswordSchema>;
+
+// 마이프로필 수정 스키마 정의
+export const EditProfileSchema = yup.object({
+  nickname: yup
+    .string()
+    .required("닉네임을 입력해주세요.")
+    .min(2, "닉네임은 최소 2자 이상이어야 합니다.")
+    .max(20, "닉네임은 최대 20자까지 가능합니다."),
+  bio: yup.string().max(80, "소개는 최대 80자까지 가능합니다.").default(""),
+});
+
+// 마이프로필 수정 데이터 타입 추론
+export type EditProfileFormData = yup.InferType<typeof EditProfileSchema>;
