@@ -5,7 +5,7 @@
 */
 import { api } from "./api";
 import type { Place } from "../components/layout/PlaceListPanel";
-import type { PlaceLikeResponse, PlaceLikeToggleRequest } from "../types/user/placeLike.types";
+import type { MyPlaceLikeListResponse, PlaceLikeResponse, PlaceLikeToggleRequest } from "../types/user/placeLike.types";
 
 // 찜 등록 / 취소
 export const togglePlaceLike = (p: Place, nextLiked: boolean) => {
@@ -28,4 +28,14 @@ export const fetchMyLikeIds = () => {
 // 내 찜 목록 건수 조회
 export const getMyPlaceLikeCount = () => {
   return api.get<number>("/api/place-likes/count");
+};
+
+// 내 찜 목록 전체 조회
+export const getMyPlaceLikes = () => {
+  return api.get<MyPlaceLikeListResponse>("/api/place-likes/me");
+};
+
+// 찜 등록 / 취소 (payload 직접 전달용)
+export const togglePlaceLikeByPayload = (payload: PlaceLikeToggleRequest) => {
+  return api.post<PlaceLikeResponse>("/api/place-likes/toggle", payload);
 };

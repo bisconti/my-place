@@ -5,13 +5,13 @@
 */
 import { useEffect, useMemo, useState } from "react";
 import { Navigate, useNavigate } from "react-router-dom";
-import { useAuth } from "../hooks/useAuth";
-import { getMyPlaceLikeCount } from "../api/placeLike.api";
-import BackButton from "../components/form/BackButton";
-import MyPageProfileCard from "../components/mypage/MyPageProfileCard";
-import MyPageStats from "../components/mypage/MyPageStats";
-import MyPageMenu from "../components/mypage/MyPageMenu";
-import MyPageRecentActivities from "../components/mypage/MyPageRecentActivities";
+import { useAuth } from "../../hooks/useAuth";
+import { getMyPlaceLikeCount } from "../../api/placeLike.api";
+import BackButton from "../../components/form/BackButton";
+import MyPageProfileCard from "../../components/mypage/MyPageProfileCard";
+import MyPageStats from "../../components/mypage/MyPageStats";
+import MyPageMenu from "../../components/mypage/MyPageMenu";
+import MyPageRecentActivities from "../../components/mypage/MyPageRecentActivities";
 
 const MyPage = () => {
   const navigate = useNavigate();

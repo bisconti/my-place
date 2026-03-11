@@ -4,12 +4,13 @@ import MainLayout from "./components/layout/MainLayout";
 import { AuthProvider } from "./contexts/AuthProvider";
 import ChangePassword from "./components/mypage/ChangePassword";
 import { Toaster } from "react-hot-toast";
-import MyPage from "./pages/MyPage";
 import FindPasswordPage from "./pages/auth/FindPasswordPage";
 import ResetPasswordPage from "./pages/auth/ResetPasswordPage";
 import LoginPage from "./pages/auth/LoginPage";
 import SignUpPage from "./pages/auth/SignUpPage";
-import EditProfilePage from "./pages/EditProfilePage";
+import EditProfilePage from "./pages/mypage/EditProfilePage";
+import MyPage from "./pages/mypage/MyPage";
+import FavoritesPage from "./pages/mypage/favorites/FavoritesPage";
 
 function App() {
   return (
@@ -36,6 +37,7 @@ function App() {
             <Route path="/mypage" element={<MyPage />} />
             <Route path="/mypage/profile" element={<EditProfilePage />} />
             <Route path="/mypage/change-password" element={<ChangePassword />} />
+            <Route path="/mypage/favorites" element={<FavoritesPage />} />
           </Routes>
         </div>
       </AuthProvider>

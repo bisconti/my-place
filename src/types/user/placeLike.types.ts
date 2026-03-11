@@ -22,3 +22,18 @@ export interface PlaceLikeResponse {
   address?: string;
   category?: string;
 }
+
+//  내 찜 목록 단건 아이템 타입
+export interface MyPlaceLikeItem {
+  placeId: string;
+  liked: boolean;
+  createdAt?: string | null;
+  placeName?: string;
+  address?: string;
+  category?: string;
+}
+
+//  내 찜 목록 조회 응답 타입
+export interface MyPlaceLikeListResponse {
+  items: MyPlaceLikeItem[];
+}
