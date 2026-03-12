@@ -1,22 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { fetchMyLikeIds, togglePlaceLike } from "../api/placeLike.api";
 import { useAuthStore } from "../stores/authStore";
-
-/** =========================
- * Domain types
- * ========================= */
-export type Place = {
-  id: string;
-  name: string;
-  category: string;
-  address: string;
-  lat: number;
-  lng: number;
-  distanceM?: number;
-  rating?: number;
-  reviewCount?: number;
-  liked?: boolean;
-};
+import type { Place } from "../types/place/place.types";
 
 const DEFAULT_CENTER = { lat: 37.5665, lng: 126.978 }; // 서울시청
 
@@ -122,6 +107,7 @@ type UseKakaoPlaceMapReturn = {
   search: (keyword: string) => Promise<void>;
 
   toggleLike: (id: string) => Promise<void>;
+  focusPlaceById: (id: string) => void;
 };
 
 export function useKakaoPlaceMap(): UseKakaoPlaceMapReturn {
@@ -170,13 +156,14 @@ export function useKakaoPlaceMap(): UseKakaoPlaceMapReturn {
   useEffect(() => {
     if (places.length === 0) return;
 
+    console.log(likedIds);
     setPlaces((prev) =>
       prev.map((p) => ({
         ...p,
         liked: likedIds.has(String(p.id)),
       }))
     );
-  }, [likedIds]);
+  }, [places.length, likedIds]);
 
   /** 마커/인포윈도우 */
   const openInfo = useCallback((p: Place) => {
@@ -324,6 +311,10 @@ export function useKakaoPlaceMap(): UseKakaoPlaceMapReturn {
     [places]
   );
 
+  const focusPlaceById = useCallback((id: string) => {
+    setSelectedId(id);
+  }, []);
+
   const search = useCallback(
     async (kw: string) => {
       const trimmed = kw.trim();
@@ -450,5 +441,6 @@ export function useKakaoPlaceMap(): UseKakaoPlaceMapReturn {
     search,
 
     toggleLike,
+    focusPlaceById,
   };
 }

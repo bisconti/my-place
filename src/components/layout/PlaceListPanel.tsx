@@ -20,11 +20,28 @@ type Props = {
   loading: boolean;
   selectedId: string | null;
   onSelect: (id: string) => void;
+  onOpenDetail: (id: string) => void;
   onToggleLike: (id: string) => void;
   isLoggedIn: boolean;
 };
 
-export default function PlaceListPanel({ places, loading, selectedId, onSelect, onToggleLike, isLoggedIn }: Props) {
+export default function PlaceListPanel({
+  places,
+  loading,
+  selectedId,
+  onSelect,
+  onOpenDetail,
+  onToggleLike,
+  isLoggedIn,
+}: Props) {
+  const handlePlaceClick = (id: string) => {
+    if (id === selectedId) {
+      onOpenDetail(id);
+      return;
+    }
+    onSelect(id);
+  };
+
   return (
     <section className="lg:col-span-4 xl:col-span-3 h-full min-h-0 border rounded-lg overflow-hidden flex flex-col">
       <div className="p-3 border-b flex items-center justify-between shrink-0">
@@ -35,24 +52,39 @@ export default function PlaceListPanel({ places, loading, selectedId, onSelect, 
       <div className="flex-1 min-h-0 overflow-auto">
         {places.map((p) => {
           const active = p.id === selectedId;
+
           return (
             <div
               key={p.id}
               role="button"
               tabIndex={0}
-              onClick={() => onSelect(p.id)}
-              className={`w-full text-left px-4 py-4 border-b hover:bg-gray-50 ${active ? "bg-red-50" : ""}`}
+              onClick={() => handlePlaceClick(p.id)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  handlePlaceClick(p.id);
+                }
+              }}
+              className={`w-full text-left px-4 py-4 border-b hover:bg-gray-50 cursor-pointer ${
+                active ? "bg-red-50" : ""
+              }`}
             >
               <div className="flex items-start justify-between gap-3">
-                <div>
+                <div className="min-w-0">
                   <div className="font-semibold text-gray-900">{p.name}</div>
-                  <div className="text-sm text-gray-500 mt-1">
+                  <div className="text-sm text-gray-500 mt-1 break-words">
                     {p.category}
                     {p.distanceM != null ? ` · ${formatDistance(p.distanceM)}` : ""} · {p.address}
                   </div>
                   <div className="text-sm text-gray-700 mt-2">
                     ⭐ {p.rating ?? "-"} · 리뷰 {p.reviewCount ?? "-"}
                   </div>
+
+                  {active && (
+                    <div className="mt-2 text-xs text-red-600 font-medium">
+                      한 번 더 클릭하면 상세 페이지로 이동합니다.
+                    </div>
+                  )}
                 </div>
 
                 {isLoggedIn && (

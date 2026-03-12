@@ -5,7 +5,11 @@
 */
 import { api } from "./api";
 import type { Place } from "../components/layout/PlaceListPanel";
-import type { MyPlaceLikeListResponse, PlaceLikeResponse, PlaceLikeToggleRequest } from "../types/user/placeLike.types";
+import type {
+  MyPlaceLikeListResponse,
+  PlaceLikeResponse,
+  PlaceLikeToggleRequest,
+} from "../types/place/placeLike.types";
 
 // 찜 등록 / 취소
 export const togglePlaceLike = (p: Place, nextLiked: boolean) => {

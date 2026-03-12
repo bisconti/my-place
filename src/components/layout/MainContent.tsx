@@ -1,10 +1,12 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import PlaceListPanel from "./PlaceListPanel";
 import MapPanel from "./MapPanel";
 import { useKakaoPlaceMap } from "../../hooks/useKakaoPlaceMap";
 import { useAuthStore } from "../../stores/authStore";
 
 export default function MainContent() {
+  const navigate = useNavigate();
   const [pendingKeyword, setPendingKeyword] = useState("");
 
   const {
@@ -12,15 +14,28 @@ export default function MainContent() {
     places,
     loading,
     selectedId,
-    setSelectedId,
     needRefetch,
     refetchHere,
     goMyLocation,
     search,
     toggleLike,
+    focusPlaceById,
   } = useKakaoPlaceMap();
 
   const isLoggedIn = useAuthStore((s) => s.isAuthenticated);
+
+  const handleSelectPlace = (id: string) => {
+    focusPlaceById(id);
+  };
+
+  const handleOpenPlaceDetail = (id: string) => {
+    const place = places.find((p) => p.id === id);
+    if (!place) return;
+
+    navigate(`/places/${id}`, {
+      state: { place },
+    });
+  };
 
   return (
     <div className="h-full min-h-0 w-full px-4 py-4">
@@ -29,7 +44,8 @@ export default function MainContent() {
           places={places}
           loading={loading}
           selectedId={selectedId}
-          onSelect={setSelectedId}
+          onSelect={handleSelectPlace}
+          onOpenDetail={handleOpenPlaceDetail}
           onToggleLike={toggleLike}
           isLoggedIn={isLoggedIn}
         />
@@ -50,6 +66,7 @@ export default function MainContent() {
                 placeholder="식당, 메뉴, 지역을 검색해보세요"
               />
             </form>
+
             <button onClick={goMyLocation} className="px-3 py-2 rounded-md border text-sm">
               내 주변
             </button>
