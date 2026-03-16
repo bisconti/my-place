@@ -12,6 +12,7 @@ import EditProfilePage from "./pages/mypage/EditProfilePage";
 import MyPage from "./pages/mypage/MyPage";
 import FavoritesPage from "./pages/mypage/favorites/FavoritesPage";
 import PlaceDetailPage from "./pages/place/PlaceDetailPage";
+import ReviewWritePage from "./pages/review/ReviewWritePage";
 
 function App() {
   return (
@@ -40,6 +41,7 @@ function App() {
             <Route path="/mypage/change-password" element={<ChangePassword />} />
             <Route path="/mypage/favorites" element={<FavoritesPage />} />
             <Route path="/places/:placeId" element={<PlaceDetailPage />} />
+            <Route path="/places/:placeId/reviews/write" element={<ReviewWritePage />} />
           </Routes>
         </div>
       </AuthProvider>

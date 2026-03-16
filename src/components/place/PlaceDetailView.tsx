@@ -25,6 +25,10 @@ const PlaceDetailView = () => {
 
   const place = state?.place;
 
+  const goReviewWrite = () => {
+    navigate(`/places/${placeId}/reviews/write`);
+  };
+
   // state 없이 진입하거나 새로고침한 경우
   if (!place) {
     return (
@@ -92,6 +96,17 @@ const PlaceDetailView = () => {
                 <p className="text-sm text-gray-500">리뷰 수</p>
                 <p className="text-base text-gray-800 mt-1">{place.reviewCount ?? "-"}</p>
               </div>
+            </div>
+
+            {/* 리뷰 작성 버튼 */}
+            <div className="flex justify-end">
+              <button
+                type="button"
+                onClick={goReviewWrite}
+                className="px-5 py-2 rounded-lg bg-red-600 text-white font-semibold hover:bg-red-700 transition"
+              >
+                리뷰 작성하기
+              </button>
             </div>
 
             {/* 좌표 */}
