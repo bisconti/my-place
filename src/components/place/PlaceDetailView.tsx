@@ -1,11 +1,9 @@
-/*
-  파일명: PlaceDetailView.tsx
-  describe
-  - 맛집 상세 페이지 본문 component
-*/
+import { useEffect, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import BackButton from "../form/BackButton";
 import type { Place } from "../../types/place/place.types";
+import type { PlaceReviewResponse, PlaceReviewSummaryResponse } from "../../types/place/placeReview.types";
+import { getPlaceReviews, getPlaceReviewSummary } from "../../api/placeReview.api";
 
 type LocationState = {
   place?: Place;
@@ -17,6 +15,17 @@ function formatDistance(m?: number) {
   return `${(m / 1000).toFixed(1)}km`;
 }
 
+function formatDate(dateString?: string) {
+  if (!dateString) return "";
+  const date = new Date(dateString);
+  if (Number.isNaN(date.getTime())) return "";
+  return date.toLocaleDateString("ko-KR");
+}
+
+function renderStars(rating: number) {
+  return "★".repeat(rating) + "☆".repeat(5 - rating);
+}
+
 const PlaceDetailView = () => {
   const navigate = useNavigate();
   const { placeId } = useParams();
@@ -25,11 +34,37 @@ const PlaceDetailView = () => {
 
   const place = state?.place;
 
+  const [reviewSummary, setReviewSummary] = useState<PlaceReviewSummaryResponse | null>(null);
+  const [reviews, setReviews] = useState<PlaceReviewResponse[]>([]);
+  const [isReviewLoading, setIsReviewLoading] = useState(false);
+
+  const imageBaseURL = "http://localhost:3001";
+
+  useEffect(() => {
+    if (!placeId) return;
+
+    const fetchReviewData = async () => {
+      try {
+        setIsReviewLoading(true);
+
+        const [summaryRes, reviewsRes] = await Promise.all([getPlaceReviewSummary(placeId), getPlaceReviews(placeId)]);
+
+        setReviewSummary(summaryRes.data);
+        setReviews(reviewsRes.data);
+      } catch (error) {
+        console.error("리뷰 데이터 조회 실패:", error);
+      } finally {
+        setIsReviewLoading(false);
+      }
+    };
+
+    fetchReviewData();
+  }, [placeId]);
+
   const goReviewWrite = () => {
     navigate(`/places/${placeId}/reviews/write`);
   };
 
-  // state 없이 진입하거나 새로고침한 경우
   if (!place) {
     return (
       <div className="min-h-screen bg-gray-50 p-4">
@@ -56,7 +91,7 @@ const PlaceDetailView = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 p-4">
-      <div className="max-w-3xl mx-auto">
+      <div className="max-w-3xl mx-auto space-y-6">
         <div className="bg-white rounded-xl shadow-md p-8">
           <div className="relative mb-6">
             <BackButton path="/" />
@@ -64,7 +99,6 @@ const PlaceDetailView = () => {
           </div>
 
           <div className="space-y-6">
-            {/* 기본 정보 */}
             <div>
               <p className="text-sm text-gray-500">가게명</p>
               <h2 className="text-2xl font-bold text-gray-900 mt-1">{place.name}</h2>
@@ -80,7 +114,6 @@ const PlaceDetailView = () => {
               <p className="text-base text-gray-800 mt-1">{place.address || "정보 없음"}</p>
             </div>
 
-            {/* 통계 */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div className="rounded-lg bg-gray-50 p-4">
                 <p className="text-sm text-gray-500">거리</p>
@@ -89,16 +122,15 @@ const PlaceDetailView = () => {
 
               <div className="rounded-lg bg-gray-50 p-4">
                 <p className="text-sm text-gray-500">평점</p>
-                <p className="text-base text-gray-800 mt-1">⭐ {place.rating ?? "-"}</p>
+                <p className="text-base text-gray-800 mt-1">⭐ {reviewSummary ? reviewSummary.averageRating : "-"}</p>
               </div>
 
               <div className="rounded-lg bg-gray-50 p-4">
                 <p className="text-sm text-gray-500">리뷰 수</p>
-                <p className="text-base text-gray-800 mt-1">{place.reviewCount ?? "-"}</p>
+                <p className="text-base text-gray-800 mt-1">{reviewSummary ? reviewSummary.reviewCount : 0}</p>
               </div>
             </div>
 
-            {/* 리뷰 작성 버튼 */}
             <div className="flex justify-end">
               <button
                 type="button"
@@ -109,7 +141,6 @@ const PlaceDetailView = () => {
               </button>
             </div>
 
-            {/* 좌표 */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="rounded-lg bg-gray-50 p-4">
                 <p className="text-sm text-gray-500">위도</p>
@@ -122,7 +153,6 @@ const PlaceDetailView = () => {
               </div>
             </div>
 
-            {/* 상태 */}
             <div className="rounded-lg border border-gray-100 bg-red-50 p-4">
               <p className="text-sm text-red-700 font-medium">찜 상태</p>
               <p className="text-sm text-red-700 mt-1">
@@ -130,7 +160,6 @@ const PlaceDetailView = () => {
               </p>
             </div>
 
-            {/* 하단 버튼 */}
             <div className="pt-4 border-t">
               <button
                 type="button"
@@ -141,6 +170,51 @@ const PlaceDetailView = () => {
               </button>
             </div>
           </div>
+        </div>
+
+        <div className="bg-white rounded-xl shadow-md p-8">
+          <div className="mb-6">
+            <h2 className="text-xl font-bold text-gray-900">리뷰</h2>
+            <p className="text-sm text-gray-500 mt-1">다른 사용자가 작성한 리뷰와 사진을 확인해보세요.</p>
+          </div>
+
+          {isReviewLoading ? (
+            <p className="text-gray-500">리뷰를 불러오는 중입니다...</p>
+          ) : reviews.length === 0 ? (
+            <div className="rounded-lg bg-gray-50 p-6 text-center text-gray-500">아직 등록된 리뷰가 없습니다.</div>
+          ) : (
+            <div className="space-y-6">
+              {reviews.map((review) => (
+                <div key={review.id} className="border rounded-xl p-5">
+                  <div className="flex items-start justify-between gap-4">
+                    <div>
+                      <p className="font-semibold text-gray-900">{review.userEmail}</p>
+                      <p className="text-sm text-yellow-500 mt-1">{renderStars(review.rating)}</p>
+                    </div>
+                    <p className="text-sm text-gray-400">{formatDate(review.createdAt)}</p>
+                  </div>
+
+                  <p className="text-gray-800 mt-4 whitespace-pre-wrap">{review.content}</p>
+
+                  {review.images && review.images.length > 0 && (
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mt-4">
+                      {review.images
+                        .sort((a, b) => a.sortOrder - b.sortOrder)
+                        .map((image) => (
+                          <div key={image.id} className="overflow-hidden rounded-lg border bg-gray-50">
+                            <img
+                              src={`${imageBaseURL}${image.filePath}`}
+                              alt={image.originalFileName}
+                              className="w-full h-32 object-cover"
+                            />
+                          </div>
+                        ))}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </div>

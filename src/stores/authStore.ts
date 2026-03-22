@@ -30,7 +30,7 @@ export const useAuthStore = create<AuthState>((set) => {
   const hasToken = !!localStorage.getItem("token");
 
   return {
-    // ✅ 처음부터 localStorage 기준으로 맞춰 시작 (중요)
+    // 처음부터 localStorage 기준으로 맞춰 시작 (중요)
     user: hasToken ? initialUser : null,
     isAuthenticated: hasToken && !!initialUser,
 
@@ -42,7 +42,7 @@ export const useAuthStore = create<AuthState>((set) => {
       }),
 
     login: (u, accessToken, refreshToken) => {
-      // ✅ user도 같이 저장 (Context랑 일치)
+      // user도 같이 저장 (Context랑 일치)
       localStorage.setItem("user", JSON.stringify(u));
       localStorage.setItem("token", accessToken);
       if (refreshToken) localStorage.setItem("refreshToken", refreshToken);
@@ -52,7 +52,7 @@ export const useAuthStore = create<AuthState>((set) => {
     },
 
     logout: () => {
-      // ✅ user도 같이 제거 (Context랑 일치)
+      // user도 같이 제거 (Context랑 일치)
       localStorage.removeItem("user");
       localStorage.removeItem("token");
       localStorage.removeItem("refreshToken");
@@ -61,7 +61,7 @@ export const useAuthStore = create<AuthState>((set) => {
       set({ user: null, isAuthenticated: false });
     },
 
-    // ✅ 앱 시작/라우트 전환 타이밍에 상태 복구가 필요할 때 호출
+    // 앱 시작/라우트 전환 타이밍에 상태 복구가 필요할 때 호출
     hydrate: () => {
       const u = readUser();
       const t = !!localStorage.getItem("token");

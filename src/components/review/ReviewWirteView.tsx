@@ -4,12 +4,23 @@
   - 리뷰 작성 화면 component
 */
 
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useState } from "react";
+import axios, { AxiosError } from "axios";
 import BackButton from "../form/BackButton";
+import { savePlaceReview } from "../../api/placeReview.api";
 
 type Props = {
   placeId?: string;
+};
+
+type ErrorResponse = {
+  message: string;
+};
+
+type LoginUser = {
+  useremail: string;
+  username?: string;
 };
 
 const ReviewWriteView = ({ placeId }: Props) => {
@@ -17,8 +28,53 @@ const ReviewWriteView = ({ placeId }: Props) => {
 
   const [rating, setRating] = useState<number>(0);
   const [content, setContent] = useState("");
+  const [files, setFiles] = useState<File[]>([]);
+  const [previewUrls, setPreviewUrls] = useState<string[]>([]);
 
-  const handleSubmit = () => {
+  useEffect(() => {
+    const urls = files.map((file) => URL.createObjectURL(file));
+    setPreviewUrls(urls);
+
+    return () => {
+      urls.forEach((url) => URL.revokeObjectURL(url));
+    };
+  }, [files]);
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const selectedFiles = Array.from(e.target.files ?? []);
+
+    if (selectedFiles.length === 0) return;
+
+    const nextFiles = [...files, ...selectedFiles];
+
+    if (nextFiles.length > 10) {
+      alert("이미지는 최대 10장까지 첨부할 수 있습니다.");
+      e.target.value = "";
+      return;
+    }
+
+    const invalidFile = nextFiles.find((file) => !file.type || !file.type.startsWith("image/"));
+
+    if (invalidFile) {
+      alert("이미지 파일만 첨부할 수 있습니다.");
+      e.target.value = "";
+      return;
+    }
+
+    setFiles(nextFiles);
+    e.target.value = "";
+  };
+
+  const handleRemoveFile = (index: number) => {
+    setFiles((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const handleSubmit = async () => {
+    if (!placeId) {
+      alert("장소 정보가 없습니다.");
+      return;
+    }
+
     if (!rating) {
       alert("별점을 선택해주세요.");
       return;
@@ -29,32 +85,60 @@ const ReviewWriteView = ({ placeId }: Props) => {
       return;
     }
 
-    console.log("리뷰 등록", {
-      placeId,
-      rating,
-      content,
-    });
+    const storedUser = localStorage.getItem("user");
+    if (!storedUser) {
+      alert("로그인이 필요합니다.");
+      return;
+    }
 
-    // TODO: API 연결
+    let user: LoginUser;
 
-    alert("리뷰가 등록되었습니다.");
-    navigate(-1);
+    try {
+      user = JSON.parse(storedUser) as LoginUser;
+    } catch {
+      alert("로그인 정보가 올바르지 않습니다.");
+      return;
+    }
+
+    if (!user.useremail) {
+      alert("사용자 이메일 정보가 없습니다.");
+      return;
+    }
+
+    try {
+      await savePlaceReview(
+        {
+          userEmail: user.useremail,
+          placeId,
+          rating,
+          content,
+        },
+        files
+      );
+
+      alert("리뷰가 등록되었습니다.");
+      navigate(-1);
+    } catch (error: unknown) {
+      if (axios.isAxiosError(error)) {
+        const axiosError = error as AxiosError<ErrorResponse>;
+        alert(axiosError.response?.data?.message || "리뷰 등록 실패");
+      } else {
+        alert("알 수 없는 오류가 발생했습니다.");
+      }
+    }
   };
 
   return (
     <div className="min-h-screen bg-gray-50 p-4">
       <div className="max-w-2xl mx-auto bg-white rounded-xl shadow-md p-8">
-        {/* 헤더 */}
         <div className="relative mb-6">
           <BackButton path={`/places/${placeId}`} />
           <h1 className="text-2xl font-bold text-center text-red-600">리뷰 작성</h1>
         </div>
 
         <div className="space-y-6">
-          {/* 별점 */}
           <div>
             <p className="text-sm text-gray-500 mb-2">별점</p>
-
             <div className="flex gap-2 text-3xl cursor-pointer select-none">
               {[1, 2, 3, 4, 5].map((star) => (
                 <span
@@ -68,10 +152,8 @@ const ReviewWriteView = ({ placeId }: Props) => {
             </div>
           </div>
 
-          {/* 리뷰 내용 */}
           <div>
             <p className="text-sm text-gray-500 mb-2">리뷰 내용</p>
-
             <textarea
               value={content}
               onChange={(e) => setContent(e.target.value)}
@@ -80,7 +162,44 @@ const ReviewWriteView = ({ placeId }: Props) => {
             />
           </div>
 
-          {/* 버튼 */}
+          <div>
+            <p className="text-sm text-gray-500 mb-2">사진 첨부 (최대 10장)</p>
+
+            <input
+              type="file"
+              accept="image/*"
+              multiple
+              onChange={handleFileChange}
+              className="block w-full text-sm text-gray-700"
+            />
+
+            {files.length > 0 && <p className="text-sm text-gray-500 mt-2">{files.length} / 10장 선택됨</p>}
+
+            {previewUrls.length > 0 && (
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mt-4">
+                {previewUrls.map((url, index) => (
+                  <div
+                    key={`${files[index]?.name ?? "preview"}-${index}`}
+                    className="relative border rounded-lg overflow-hidden"
+                  >
+                    <img
+                      src={url}
+                      alt={files[index]?.name ?? `preview-${index}`}
+                      className="w-full h-32 object-cover"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveFile(index)}
+                      className="absolute top-2 right-2 bg-black/60 text-white text-xs px-2 py-1 rounded"
+                    >
+                      삭제
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
           <div className="flex gap-3 pt-4 border-t">
             <button
               type="button"

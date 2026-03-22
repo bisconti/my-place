@@ -7,6 +7,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Navigate, useNavigate } from "react-router-dom";
 import { useAuth } from "../../hooks/useAuth";
 import { getMyPlaceLikeCount } from "../../api/placeLike.api";
+import { getMyReviewCount } from "../../api/placeReview.api";
 import BackButton from "../../components/form/BackButton";
 import MyPageProfileCard from "../../components/mypage/MyPageProfileCard";
 import MyPageStats from "../../components/mypage/MyPageStats";
@@ -16,29 +17,34 @@ import MyPageRecentActivities from "../../components/mypage/MyPageRecentActiviti
 const MyPage = () => {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
-  const [likeCount, setLikeCount] = useState(0);
 
-  // 찜 목록 건수 조회
+  const [likeCount, setLikeCount] = useState(0);
+  const [reviewCount, setReviewCount] = useState(0);
+
   useEffect(() => {
-    const fetchLikeCount = async () => {
+    if (!user?.useremail) return;
+
+    const fetchMyPageCounts = async () => {
       try {
-        const res = await getMyPlaceLikeCount();
-        setLikeCount(res.data);
+        const [likeRes, reviewRes] = await Promise.all([getMyPlaceLikeCount(), getMyReviewCount(user.useremail)]);
+
+        setLikeCount(likeRes.data);
+        setReviewCount(reviewRes.data);
       } catch (err) {
-        console.error("찜 개수 조회 실패", err);
+        console.error("마이페이지 통계 조회 실패", err);
       }
     };
 
-    fetchLikeCount();
-  }, []);
+    fetchMyPageCounts();
+  }, [user?.useremail]);
 
   const stats = useMemo(
     () => [
-      { label: "내 리뷰", value: 0, desc: "작성한 리뷰 수" },
+      { label: "내 리뷰", value: reviewCount, desc: "작성한 리뷰 수" },
       { label: "찜한 맛집", value: likeCount, desc: "저장한 맛집 수" },
       { label: "최근 방문", value: 0, desc: "최근 방문 기록" },
     ],
-    [likeCount]
+    [likeCount, reviewCount]
   );
 
   const recentActivities = useMemo(
