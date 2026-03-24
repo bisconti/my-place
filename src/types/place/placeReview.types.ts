@@ -22,6 +22,7 @@ export interface PlaceReviewImageResponse {
 export interface PlaceReviewResponse {
   id: number;
   userEmail: string;
+  nickname: string;
   placeId: string;
   rating: number;
   content: string;
@@ -35,4 +36,17 @@ export interface PlaceReviewSummaryResponse {
   placeId: string;
   averageRating: number;
   reviewCount: number;
+}
+
+/*
+  기능
+  - 내 리뷰 목록 조회용 type
+*/
+export interface MyPlaceReviewItem extends PlaceReviewResponse {
+  placeName?: string;
+}
+
+export interface MyPlaceReviewListResponse {
+  reviews: MyPlaceReviewItem[];
+  totalCount: number;
 }

@@ -188,7 +188,7 @@ const PlaceDetailView = () => {
                 <div key={review.id} className="border rounded-xl p-5">
                   <div className="flex items-start justify-between gap-4">
                     <div>
-                      <p className="font-semibold text-gray-900">{review.userEmail}</p>
+                      <p className="font-semibold text-gray-900">{review.nickname}</p>
                       <p className="text-sm text-yellow-500 mt-1">{renderStars(review.rating)}</p>
                     </div>
                     <p className="text-sm text-gray-400">{formatDate(review.createdAt)}</p>

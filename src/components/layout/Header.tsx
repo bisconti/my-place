@@ -2,12 +2,11 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import { useAuthStore } from "../../stores/authStore";
+import { authStorage } from "../../stores/authStorage";
 
 /** =========================
  * Config
  * ========================= */
-const TOKEN_KEY = "token";
-const LAST_ACTIVITY_KEY = "lastActivityAt";
 const IDLE_TIMEOUT_SEC = 15 * 60;
 
 /** =========================
@@ -46,7 +45,7 @@ const getJwtLeftSec = (token: string): number | null => {
 
 const getIdleLeftSec = (): number => {
   const nowMs = Date.now();
-  const lastMs = Number(localStorage.getItem(LAST_ACTIVITY_KEY) || "0");
+  const lastMs = authStorage.getLastActivity();
 
   // 최초 진입/기록이 없으면 풀로 시작
   if (!lastMs) return IDLE_TIMEOUT_SEC;
@@ -74,7 +73,7 @@ const Header = () => {
     const now = Date.now();
     if (now - lastWriteRef.current < 1000) return; // throttle
     lastWriteRef.current = now;
-    localStorage.setItem(LAST_ACTIVITY_KEY, String(now));
+    authStorage.setLastActivity(now);
   };
 
   /** =========================
@@ -132,7 +131,7 @@ const Header = () => {
     const tick = () => {
       const idleLeft = getIdleLeftSec();
 
-      const token = localStorage.getItem(TOKEN_KEY);
+      const token = authStorage.getAccessToken();
       const jwtLeft = token ? getJwtLeftSec(token) : null;
 
       // jwtLeft가 없으면 idle만 사용

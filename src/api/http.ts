@@ -5,6 +5,7 @@
   - 헤더에 토큰 주입만 담당
 */
 import axios from "axios";
+import { authStorage } from "../stores/authStorage";
 
 export const http = axios.create({
   withCredentials: false,
@@ -12,10 +13,12 @@ export const http = axios.create({
 
 // 토큰 자동 주입
 http.interceptors.request.use((config) => {
-  const token = localStorage.getItem("token");
+  const token = authStorage.getAccessToken();
+
   if (token) {
     config.headers = config.headers ?? {};
-    config.headers.Authorization = `${token}`;
+    config.headers.Authorization = `Bearer ${token}`;
   }
+
   return config;
 });

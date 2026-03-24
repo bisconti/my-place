@@ -9,6 +9,7 @@ import { useNavigate } from "react-router-dom";
 import axios, { AxiosError } from "axios";
 import BackButton from "../form/BackButton";
 import { savePlaceReview } from "../../api/placeReview.api";
+import { useAuthStore } from "../../stores/authStore";
 
 type Props = {
   placeId?: string;
@@ -18,13 +19,10 @@ type ErrorResponse = {
   message: string;
 };
 
-type LoginUser = {
-  useremail: string;
-  username?: string;
-};
-
 const ReviewWriteView = ({ placeId }: Props) => {
   const navigate = useNavigate();
+
+  const loginUser = useAuthStore.getState().user;
 
   const [rating, setRating] = useState<number>(0);
   const [content, setContent] = useState("");
@@ -85,30 +83,15 @@ const ReviewWriteView = ({ placeId }: Props) => {
       return;
     }
 
-    const storedUser = localStorage.getItem("user");
-    if (!storedUser) {
+    if (!loginUser?.useremail) {
       alert("로그인이 필요합니다.");
-      return;
-    }
-
-    let user: LoginUser;
-
-    try {
-      user = JSON.parse(storedUser) as LoginUser;
-    } catch {
-      alert("로그인 정보가 올바르지 않습니다.");
-      return;
-    }
-
-    if (!user.useremail) {
-      alert("사용자 이메일 정보가 없습니다.");
       return;
     }
 
     try {
       await savePlaceReview(
         {
-          userEmail: user.useremail,
+          userEmail: loginUser.useremail,
           placeId,
           rating,
           content,

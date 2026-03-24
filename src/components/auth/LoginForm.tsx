@@ -8,7 +8,6 @@ import axios from "axios";
 import { useMemo, useState } from "react";
 import { useForm, type SubmitHandler } from "react-hook-form";
 import { Link, useNavigate } from "react-router-dom";
-import { useAuth } from "../../hooks/useAuth";
 import BackButton from "../form/BackButton";
 import { LoginSchema, type LoginFormData } from "../../schemas/authSchema";
 import { useAuthStore } from "../../stores/authStore";
@@ -16,8 +15,6 @@ import { signIn } from "../../api/auth.api";
 
 const LoginForm = () => {
   const navigate = useNavigate();
-  const { login } = useAuth();
-
   // API 상태 관리
   const [isSubmitting, setIsSubmitting] = useState(false);
   // API 인증 오류 메시지 관리
@@ -36,21 +33,19 @@ const LoginForm = () => {
   // 유효성 검증 통과 시 실행
   const onSubmit: SubmitHandler<LoginFormData> = async (data) => {
     setIsSubmitting(true);
-    setAuthError(null); // 기존 API 오류 초기화
+    setAuthError(null);
 
     try {
       const res = await signIn(data);
 
-      // 로그인 성공 시 Context의 login 함수를 사용하여 상태 업데이트 및 localStorage에 저장
       const { user, token, refreshToken } = res.data;
 
-      login(user, token);
-      localStorage.setItem("token", token);
-      useAuthStore.getState().setAuthenticated(true);
-
-      if (refreshToken) {
-        localStorage.setItem("refreshToken", refreshToken);
-      }
+      // zustand + storage 동기화
+      useAuthStore.getState().setAuth({
+        user,
+        token,
+        refreshToken,
+      });
 
       navigate("/");
     } catch (error) {

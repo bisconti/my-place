@@ -44,8 +44,9 @@ export const getPlaceReviewSummary = (placeId: string) => {
 /**
  * 특정 사용자 리뷰 조회
  */
-export const getMyReviews = (userEmail: string) => {
-  return api.get<PlaceReviewResponse[]>(`/api/reviews/user/${userEmail}`);
+export const getMyReviews = async (userEmail: string): Promise<PlaceReviewResponse[]> => {
+  const response = await api.get<PlaceReviewResponse[]>(`/api/reviews/user/${userEmail}`);
+  return response.data;
 };
 
 // 마이페이지 리뷰 건수 조회
@@ -56,6 +57,6 @@ export const getMyReviewCount = (userEmail: string) => {
 /**
  * 리뷰 삭제
  */
-export const deletePlaceReview = (reviewId: number) => {
-  return api.delete(`/api/reviews/${reviewId}`);
+export const deletePlaceReview = async (reviewId: number): Promise<void> => {
+  await api.delete(`/api/reviews/${reviewId}`);
 };

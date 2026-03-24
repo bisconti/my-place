@@ -1,60 +1,53 @@
 /*
   파일명: AuthProvider.tsx
   기능 
-  - zustand 에서 auth state/action을 가져와서 AuthContext로 내려줌.
-  - 어플리케이션 기동 시 hydrate()로 localStorage 기반 복구
-  - 401에러/세션만료 처리를 setOnUnauthorized 에 등록해서 만료시 store.logout() 실행
-  - zustand를 Context 형태로 노출하는 bridge 역할
+  - zustand auth state/action을 AuthContext로 내려주는 bridge
+  - 앱 시작 시 initAuth()로 storage 기반 인증 상태 복구
 */
-import { useEffect, useMemo, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, type ReactNode } from "react";
 import { AuthContext } from "./AuthContext";
 import type { User } from "../types/user/user.types";
-import { setOnUnauthorized, useAuthStore } from "../stores/authStore";
-
-type UnauthorizedOptions = {
-  silent?: boolean;
-};
+import { useAuthStore } from "../stores/authStore";
 
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const user = useAuthStore((s) => s.user);
-  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
-  const loginStore = useAuthStore((s) => s.login);
-  const logoutStore = useAuthStore((s) => s.logout);
-  const setUserStore = useAuthStore((s) => s.setUser);
+  const user = useAuthStore((state) => state.user);
+  const token = useAuthStore((state) => state.token);
 
-  const hydrate = useAuthStore((s) => s.hydrate);
+  const initAuth = useAuthStore((state) => state.initAuth);
+  const setAuth = useAuthStore((state) => state.setAuth);
+  const logoutStore = useAuthStore((state) => state.logout);
+  const setUserStore = useAuthStore((state) => state.setUser);
 
   useEffect(() => {
-    hydrate();
+    initAuth();
+  }, [initAuth]);
 
-    setOnUnauthorized((opts?: UnauthorizedOptions) => {
-      logoutStore();
+  const isLoggedIn = !!user && !!token;
 
-      if (opts?.silent) return;
+  const login = useCallback(
+    (userData: User, accessToken: string, refreshToken?: string) => {
+      setAuth({
+        user: userData,
+        token: accessToken,
+        refreshToken,
+      });
+    },
+    [setAuth]
+  );
 
-      alert("세션이 만료되었습니다. 다시 로그인 해주세요.");
-      window.location.href = "/login";
-    });
-  }, []);
+  const logout = useCallback(() => {
+    logoutStore({ silent: false });
+  }, [logoutStore]);
 
-  const isLoggedIn = !!user && isAuthenticated;
+  const updateUser = useCallback(
+    (partial: Partial<User>) => {
+      if (!user) return;
 
-  const login = (userData: User, token: string, refreshToken?: string) => {
-    loginStore(userData, token, refreshToken);
-  };
-
-  const logout = () => {
-    logoutStore();
-  };
-
-  const updateUser = (partial: Partial<User>) => {
-    if (!user) return;
-    const next = { ...user, ...partial } as User;
-
-    setUserStore(next);
-
-    localStorage.setItem("user", JSON.stringify(next));
-  };
+      const nextUser = { ...user, ...partial };
+      setUserStore(nextUser);
+    },
+    [user, setUserStore]
+  );
 
   const value = useMemo(
     () => ({
@@ -64,7 +57,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       logout,
       updateUser,
     }),
-    [user, isLoggedIn]
+    [user, isLoggedIn, login, logout, updateUser]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
