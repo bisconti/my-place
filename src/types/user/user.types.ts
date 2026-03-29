@@ -15,7 +15,7 @@ import { type FieldErrors, type UseFormRegister } from "react-hook-form";
 // 사용자 정보 타입 정의
 export interface User {
   useremail: string;
-  username: string;
+  username?: string;
 }
 
 // Context에서 제공할 값들의 type 정의

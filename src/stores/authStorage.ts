@@ -4,7 +4,7 @@
   - 인증 관련 localStorage / sessionStorage 접근 전담
 */
 
-import type { LoginUser } from "../types/user/auth.types";
+import type { User } from "../types/user/user.types";
 
 const STORAGE_KEYS = {
   USER: "user",
@@ -15,19 +15,19 @@ const STORAGE_KEYS = {
 } as const;
 
 export const authStorage = {
-  getUser(): LoginUser | null {
+  getUser(): User | null {
     const raw = localStorage.getItem(STORAGE_KEYS.USER);
     if (!raw) return null;
 
     try {
-      return JSON.parse(raw) as LoginUser;
+      return JSON.parse(raw) as User;
     } catch (error) {
       console.error("user 파싱 실패:", error);
       return null;
     }
   },
 
-  setUser(user: LoginUser) {
+  setUser(user: User) {
     localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(user));
   },
 

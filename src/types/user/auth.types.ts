@@ -5,13 +5,10 @@
   - 인증 관련 공통 타입
 */
 
-export interface LoginUser {
-  useremail: string;
-  username?: string;
-}
+import type { User } from "./user.types";
 
 export interface AuthState {
-  user: LoginUser | null;
+  user: User | null;
   token: string | null;
   refreshToken: string | null;
 }

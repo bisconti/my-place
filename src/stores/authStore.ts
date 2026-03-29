@@ -6,19 +6,19 @@
 
 import { create } from "zustand";
 import { authStorage } from "./authStorage";
-import type { LoginUser } from "../types/user/auth.types";
+import type { User } from "../types/user/user.types";
 
 type AuthStore = {
-  user: LoginUser | null;
+  user: User | null;
   token: string | null;
   refreshToken: string | null;
   bootstrapped: boolean;
 
   initAuth: () => void;
-  setAuth: (payload: { user: LoginUser; token: string; refreshToken?: string | null }) => void;
+  setAuth: (payload: { user: User; token: string; refreshToken?: string | null }) => void;
   setAccessToken: (token: string | null) => void;
   setRefreshToken: (refreshToken: string | null) => void;
-  setUser: (user: LoginUser | null) => void;
+  setUser: (user: User | null) => void;
   logout: (options?: { silent?: boolean }) => void;
 };
 
