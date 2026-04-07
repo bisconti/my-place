@@ -1,8 +1,16 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import { useAuthStore } from "../../stores/authStore";
 import { authStorage } from "../../stores/authStorage";
+import {
+  getUnreadNotificationCount,
+  getUserNotifications,
+  readAllUserNotifications,
+  readUserNotification,
+} from "../../api/notification/userNotification.api";
+import type { UserNotification } from "../../types/notification/userNotification.type";
+import { getPlaceDetail } from "../../api/place/place.api";
 
 /** =========================
  * Config
@@ -35,7 +43,7 @@ const getJwtLeftSec = (token: string): number | null => {
     const payload = JSON.parse(payloadJson);
     const exp = payload?.exp;
 
-    if (typeof exp !== "number") return null; // exp = unix seconds
+    if (typeof exp !== "number") return null;
     const nowSec = Math.floor(Date.now() / 1000);
     return Math.max(0, exp - nowSec);
   } catch {
@@ -47,11 +55,22 @@ const getIdleLeftSec = (): number => {
   const nowMs = Date.now();
   const lastMs = authStorage.getLastActivity();
 
-  // 최초 진입/기록이 없으면 풀로 시작
   if (!lastMs) return IDLE_TIMEOUT_SEC;
 
   const diffSec = Math.floor((nowMs - lastMs) / 1000);
   return Math.max(0, IDLE_TIMEOUT_SEC - diffSec);
+};
+
+const formatNotificationDate = (dateString: string) => {
+  const date = new Date(dateString);
+  if (Number.isNaN(date.getTime())) return "";
+
+  return date.toLocaleString("ko-KR", {
+    month: "short",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
 };
 
 const Header = () => {
@@ -63,6 +82,13 @@ const Header = () => {
 
   const [leftSec, setLeftSec] = useState<number | null>(null);
 
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [notifications, setNotifications] = useState<UserNotification[]>([]);
+  const [isNotificationOpen, setIsNotificationOpen] = useState(false);
+  const [isNotificationLoading, setIsNotificationLoading] = useState(false);
+
+  const notificationRef = useRef<HTMLDivElement | null>(null);
+
   // 만료 처리 중복 방지
   const expiredHandledRef = useRef(false);
 
@@ -71,9 +97,40 @@ const Header = () => {
 
   const touchActivity = () => {
     const now = Date.now();
-    if (now - lastWriteRef.current < 1000) return; // throttle
+    if (now - lastWriteRef.current < 1000) return;
     lastWriteRef.current = now;
     authStorage.setLastActivity(now);
+  };
+
+  const fetchUnreadCount = useCallback(async () => {
+    if (!user) {
+      setUnreadCount(0);
+      return;
+    }
+
+    try {
+      const data = await getUnreadNotificationCount();
+      setUnreadCount(data.unreadCount);
+    } catch (error) {
+      console.error("읽지 않은 알림 개수 조회 실패", error);
+    }
+  }, [user]);
+
+  const fetchNotifications = async () => {
+    if (!user) {
+      setNotifications([]);
+      return;
+    }
+
+    try {
+      setIsNotificationLoading(true);
+      const data = await getUserNotifications();
+      setNotifications(data);
+    } catch (error) {
+      console.error("알림 목록 조회 실패", error);
+    } finally {
+      setIsNotificationLoading(false);
+    }
   };
 
   /** =========================
@@ -84,12 +141,15 @@ const Header = () => {
 
     if (!user) {
       setLeftSec(null);
+      setUnreadCount(0);
+      setNotifications([]);
+      setIsNotificationOpen(false);
       return;
     }
 
-    // 로그인 직후 활동 시작
     touchActivity();
-  }, [user]);
+    fetchUnreadCount();
+  }, [user, fetchUnreadCount]);
 
   // 활동 처리
   useEffect(() => {
@@ -105,7 +165,6 @@ const Header = () => {
 
     const onActivity = () => touchActivity();
 
-    // scroll/touch 이벤트는 passive로
     window.addEventListener("click", onActivity);
     window.addEventListener("keydown", onActivity);
     window.addEventListener("mousemove", onActivity);
@@ -122,8 +181,22 @@ const Header = () => {
   }, [user]);
 
   /** =========================
+   * 알림 바깥 클릭 닫기
+   * ========================= */
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (!notificationRef.current) return;
+      if (!notificationRef.current.contains(event.target as Node)) {
+        setIsNotificationOpen(false);
+      }
+    };
+
+    window.addEventListener("mousedown", handleClickOutside);
+    return () => window.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  /** =========================
    * 1초마다 남은시간 계산
-   * - idleRemaining 과 jwtRemaining 중 "더 짧은 값"을 표시/판정
    * ========================= */
   useEffect(() => {
     if (!user) return;
@@ -134,7 +207,6 @@ const Header = () => {
       const token = authStorage.getAccessToken();
       const jwtLeft = token ? getJwtLeftSec(token) : null;
 
-      // jwtLeft가 없으면 idle만 사용
       const next = jwtLeft === null ? idleLeft : Math.min(idleLeft, jwtLeft);
       setLeftSec(next);
     };
@@ -163,6 +235,72 @@ const Header = () => {
     if (leftSec === null) return "";
     return formatMMSS(leftSec);
   }, [leftSec]);
+
+  const handleNotificationToggle = async () => {
+    if (!user) {
+      navigate("/login");
+      return;
+    }
+
+    const nextOpen = !isNotificationOpen;
+    setIsNotificationOpen(nextOpen);
+
+    if (nextOpen) {
+      await fetchNotifications();
+      await fetchUnreadCount();
+    }
+  };
+
+  const handleNotificationClick = async (notification: UserNotification) => {
+    try {
+      if (!notification.isRead) {
+        await readUserNotification(notification.id);
+
+        setNotifications((prev) =>
+          prev.map((item) =>
+            item.id === notification.id ? { ...item, isRead: true, readAt: new Date().toISOString() } : item
+          )
+        );
+
+        setUnreadCount((prev) => Math.max(0, prev - 1));
+      }
+
+      setIsNotificationOpen(false);
+
+      if (notification.targetType === "PLACE" && notification.targetId) {
+        const place = await getPlaceDetail(notification.targetId);
+
+        navigate(`/places/${notification.targetId}`, {
+          state: { place },
+        });
+        return;
+      }
+
+      navigate("/mypage");
+    } catch (error) {
+      console.error("알림 읽음 처리 실패", error);
+      toast.error("알림 처리에 실패했습니다.");
+    }
+  };
+  const handleReadAllNotifications = async () => {
+    try {
+      await readAllUserNotifications();
+
+      setNotifications((prev) =>
+        prev.map((item) => ({
+          ...item,
+          isRead: true,
+          readAt: item.readAt ?? new Date().toISOString(),
+        }))
+      );
+      setUnreadCount(0);
+
+      toast.success("모든 알림을 읽음 처리했습니다.");
+    } catch (error) {
+      console.error("전체 알림 읽음 처리 실패", error);
+      toast.error("전체 읽음 처리에 실패했습니다.");
+    }
+  };
 
   return (
     <header className="sticky top-0 z-50 bg-white shadow-md">
@@ -224,8 +362,103 @@ const Header = () => {
               </button>
             )}
 
-            {/* 세션(유휴/토큰) 남은시간 배지 + 사람 아이콘(디자인 유지) */}
             <div className="flex items-center gap-2">
+              {/* 알림 버튼 */}
+              <div className="relative" ref={notificationRef}>
+                <button
+                  type="button"
+                  onClick={handleNotificationToggle}
+                  className="relative flex items-center justify-center w-10 h-10 rounded-full border border-gray-200 bg-white text-gray-600 hover:text-red-600 hover:bg-gray-50 transition"
+                  aria-label="알림"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
+                      d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V4a2 2 0 10-4 0v1.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0a3 3 0 11-6 0m6 0H9"
+                    />
+                  </svg>
+
+                  {unreadCount > 0 && (
+                    <span className="absolute top-2.5 right-2.5 w-2.5 h-2.5 rounded-full bg-red-500" />
+                  )}
+                </button>
+
+                {isNotificationOpen && (
+                  <div className="absolute right-0 mt-2 w-96 max-w-[90vw] bg-white border border-gray-200 rounded-2xl shadow-xl overflow-hidden z-50">
+                    <div className="flex items-center justify-between px-4 py-3 border-b bg-gray-50">
+                      <div>
+                        <p className="text-sm font-semibold text-gray-900">알림</p>
+                        <p className="text-xs text-gray-500">최근 알림을 확인해보세요.</p>
+                      </div>
+
+                      {notifications.length > 0 && unreadCount > 0 && (
+                        <button
+                          type="button"
+                          onClick={handleReadAllNotifications}
+                          className="text-xs font-medium text-red-600 hover:text-red-700"
+                        >
+                          전체 읽음
+                        </button>
+                      )}
+                    </div>
+
+                    <div className="max-h-96 overflow-y-auto">
+                      {isNotificationLoading ? (
+                        <div className="px-4 py-8 text-sm text-center text-gray-500">알림을 불러오는 중입니다...</div>
+                      ) : notifications.length === 0 ? (
+                        <div className="px-4 py-8 text-sm text-center text-gray-500">아직 알림이 없습니다.</div>
+                      ) : (
+                        notifications.slice(0, 5).map((notification) => (
+                          <button
+                            key={notification.id}
+                            type="button"
+                            onClick={() => handleNotificationClick(notification)}
+                            className={`w-full text-left px-4 py-4 border-b last:border-b-0 hover:bg-gray-50 transition ${
+                              notification.isRead ? "bg-white" : "bg-red-50/40"
+                            }`}
+                          >
+                            <div className="flex items-start justify-between gap-3">
+                              <div className="min-w-0">
+                                <div className="flex items-center gap-2">
+                                  <p className="text-sm font-semibold text-gray-900 truncate">{notification.title}</p>
+                                  {!notification.isRead && (
+                                    <span className="w-2 h-2 rounded-full bg-red-500 shrink-0" />
+                                  )}
+                                </div>
+
+                                <p className="mt-1 text-sm text-gray-600 line-clamp-2">{notification.content}</p>
+                              </div>
+
+                              <span className="text-xs text-gray-400 shrink-0">
+                                {formatNotificationDate(notification.createdAt)}
+                              </span>
+                            </div>
+                          </button>
+                        ))
+                      )}
+                    </div>
+
+                    {notifications.length > 5 && (
+                      <div className="px-4 py-3 border-t bg-gray-50">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setIsNotificationOpen(false);
+                            navigate("/mypage/notifications");
+                          }}
+                          className="w-full text-sm font-medium text-gray-700 hover:text-red-600"
+                        >
+                          전체 알림 보기
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* 세션 남은시간 */}
               {user && leftSec !== null && (
                 <div
                   className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-slate-100 text-slate-700 text-xs font-semibold border border-slate-200"
@@ -236,6 +469,7 @@ const Header = () => {
                 </div>
               )}
 
+              {/* 사용자 아이콘 */}
               <button
                 className="text-gray-600 hover:text-red-600 focus:outline-none"
                 aria-label="사용자 메뉴"

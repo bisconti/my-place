@@ -14,6 +14,7 @@ import FavoritesPage from "./pages/mypage/favorites/FavoritesPage";
 import PlaceDetailPage from "./pages/place/PlaceDetailPage";
 import ReviewWritePage from "./pages/review/ReviewWritePage";
 import MyReviewsPage from "./pages/mypage/MyReviewPage";
+import SettingsPage from "./pages/mypage/SettingsPage";
 
 function App() {
   return (
@@ -42,6 +43,7 @@ function App() {
             <Route path="/mypage/change-password" element={<ChangePassword />} />
             <Route path="/mypage/favorites" element={<FavoritesPage />} />
             <Route path="/mypage/reviews" element={<MyReviewsPage />} />
+            <Route path="/mypage/settings" element={<SettingsPage />} />
             <Route path="/places/:placeId" element={<PlaceDetailPage />} />
             <Route path="/places/:placeId/reviews/write" element={<ReviewWritePage />} />
           </Routes>

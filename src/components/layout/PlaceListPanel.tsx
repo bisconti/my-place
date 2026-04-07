@@ -1,13 +1,4 @@
-export type Place = {
-  id: string;
-  name: string;
-  category: string;
-  address: string;
-  distanceM?: number;
-  rating?: number;
-  reviewCount?: number;
-  liked?: boolean;
-};
+import type { Place } from "../../types/place/place.types";
 
 function formatDistance(m?: number) {
   if (m == null) return "";

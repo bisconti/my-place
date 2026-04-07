@@ -8,8 +8,8 @@ import type {
   PlaceReviewRequest,
   PlaceReviewResponse,
   PlaceReviewSummaryResponse,
-} from "../types/place/placeReview.types";
-import { api } from "./api";
+} from "../../types/place/placeReview.types";
+import { api } from "../api";
 
 /**
  * 리뷰 등록
@@ -17,14 +17,19 @@ import { api } from "./api";
 export const savePlaceReview = (review: PlaceReviewRequest, images: File[]) => {
   const formData = new FormData();
 
-  formData.append("review", JSON.stringify(review));
+  formData.append("userEmail", review.userEmail);
+  formData.append("placeId", review.placeId);
+  formData.append("placeName", review.placeName ?? "");
+  formData.append("address", review.address ?? "");
+  formData.append("roadAddress", review.roadAddress ?? "");
+  formData.append("category", review.category ?? "");
+  formData.append("phone", review.phone ?? "");
+  formData.append("rating", String(review.rating));
+  formData.append("content", review.content);
+
   images.forEach((image) => formData.append("images", image));
 
-  return api.post<PlaceReviewResponse>("/api/reviews", formData, {
-    headers: {
-      "Content-Type": "multipart/form-data",
-    },
-  });
+  return api.post<PlaceReviewResponse>("/api/reviews", formData);
 };
 
 /**
@@ -38,14 +43,16 @@ export const getPlaceReviews = (placeId: string) => {
  * 식당 상세 페이지 별점 & 리뷰수 조회
  */
 export const getPlaceReviewSummary = (placeId: string) => {
-  return api.get<PlaceReviewSummaryResponse>(`/api/reviews/place/${placeId}/summary`);
+  return api.get<PlaceReviewSummaryResponse>(`/api/reviews/summary/${placeId}`);
 };
 
 /**
  * 특정 사용자 리뷰 조회
  */
 export const getMyReviews = async (userEmail: string): Promise<PlaceReviewResponse[]> => {
-  const response = await api.get<PlaceReviewResponse[]>(`/api/reviews/user/${userEmail}`);
+  const response = await api.get<PlaceReviewResponse[]>("/api/reviews/my", {
+    params: { userEmail },
+  });
   return response.data;
 };
 

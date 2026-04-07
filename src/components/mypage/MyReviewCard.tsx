@@ -21,11 +21,12 @@ const formatDate = (dateString: string) => {
 };
 
 const MyReviewCard = ({ review, onDelete }: MyReviewCardProps) => {
+  console.log(review);
   return (
     <div className="bg-white rounded-xl shadow-sm border p-5">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h3 className="text-base font-bold text-gray-900">식당 ID: {review.placeId}</h3>
+          <h3 className="text-base font-bold text-gray-900">식당명: {review.placeName}</h3>
           <p className="text-sm text-gray-500 mt-1">작성일: {formatDate(review.createdAt)}</p>
         </div>
 
@@ -39,7 +40,7 @@ const MyReviewCard = ({ review, onDelete }: MyReviewCardProps) => {
           {review.images.map((image) => (
             <img
               key={image.id}
-              src={image.filePath}
+              src={`${import.meta.env.VITE_IMAGE_BASE_URL}${image.filePath}`}
               alt={image.originalFileName}
               className="w-full h-28 object-cover rounded-lg border"
             />

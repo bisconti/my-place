@@ -3,6 +3,8 @@ export interface Place {
   name: string;
   category: string;
   address: string;
+  roadAddress: string;
+  phone: string;
   lat: number;
   lng: number;
   distanceM?: number;

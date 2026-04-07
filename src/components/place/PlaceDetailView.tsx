@@ -3,7 +3,8 @@ import { useLocation, useNavigate, useParams } from "react-router-dom";
 import BackButton from "../form/BackButton";
 import type { Place } from "../../types/place/place.types";
 import type { PlaceReviewResponse, PlaceReviewSummaryResponse } from "../../types/place/placeReview.types";
-import { getPlaceReviews, getPlaceReviewSummary } from "../../api/placeReview.api";
+import { getPlaceReviews, getPlaceReviewSummary } from "../../api/place/placeReview.api";
+import { getPlaceDetail } from "../../api/place/place.api";
 
 type LocationState = {
   place?: Place;
@@ -32,13 +33,32 @@ const PlaceDetailView = () => {
   const location = useLocation();
   const state = location.state as LocationState | null;
 
-  const place = state?.place;
+  const [place, setPlace] = useState<Place | null>(state?.place ?? null);
+  const [isPlaceLoading, setIsPlaceLoading] = useState(false);
 
   const [reviewSummary, setReviewSummary] = useState<PlaceReviewSummaryResponse | null>(null);
   const [reviews, setReviews] = useState<PlaceReviewResponse[]>([]);
   const [isReviewLoading, setIsReviewLoading] = useState(false);
 
-  const imageBaseURL = "http://localhost:3001";
+  useEffect(() => {
+    if (!placeId) return;
+    if (state?.place) return;
+
+    const fetchPlaceDetail = async () => {
+      try {
+        setIsPlaceLoading(true);
+        const data = await getPlaceDetail(placeId);
+        setPlace(data);
+      } catch (error) {
+        console.error("식당 상세 조회 실패:", error);
+        setPlace(null);
+      } finally {
+        setIsPlaceLoading(false);
+      }
+    };
+
+    fetchPlaceDetail();
+  }, [placeId, state?.place]);
 
   useEffect(() => {
     if (!placeId) return;
@@ -62,8 +82,39 @@ const PlaceDetailView = () => {
   }, [placeId]);
 
   const goReviewWrite = () => {
-    navigate(`/places/${placeId}/reviews/write`);
+    if (!place) return;
+
+    navigate(`/places/${placeId}/reviews/write`, {
+      state: {
+        place: {
+          id: placeId,
+          name: place.name,
+          address: place.address,
+          roadAddress: place.roadAddress,
+          category: place.category,
+          phone: place.phone,
+          lat: place.lat,
+          lng: place.lng,
+          liked: place.liked,
+          distanceM: place.distanceM,
+        },
+      },
+    });
   };
+
+  if (isPlaceLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 p-4">
+        <div className="max-w-3xl mx-auto bg-white rounded-xl shadow-md p-8 text-center">
+          <div className="relative mb-6">
+            <BackButton path="/" />
+            <h1 className="text-2xl sm:text-3xl font-bold text-center text-red-600">맛집 상세</h1>
+          </div>
+          <p className="text-gray-500">상세 정보를 불러오는 중입니다...</p>
+        </div>
+      </div>
+    );
+  }
 
   if (!place) {
     return (
@@ -203,7 +254,7 @@ const PlaceDetailView = () => {
                         .map((image) => (
                           <div key={image.id} className="overflow-hidden rounded-lg border bg-gray-50">
                             <img
-                              src={`${imageBaseURL}${image.filePath}`}
+                              src={`${import.meta.env.VITE_IMAGE_BASE_URL}${image.filePath}`}
                               alt={image.originalFileName}
                               className="w-full h-32 object-cover"
                             />

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { fetchMyLikeIds, togglePlaceLike } from "../api/placeLike.api";
+import { fetchMyLikeIds, togglePlaceLike } from "../api/place/placeLike.api";
 import { useAuthStore } from "../stores/authStore";
 import type { Place } from "../types/place/place.types";
 
@@ -28,8 +28,9 @@ type KakaoPlaceResult = {
   category_name?: string;
   address_name?: string;
   road_address_name?: string;
-  x: string; // lng
-  y: string; // lat
+  phone?: string;
+  x: string;
+  y: string;
   distance?: string;
 };
 
@@ -93,19 +94,14 @@ declare global {
 
 type UseKakaoPlaceMapReturn = {
   mapRef: React.RefObject<HTMLDivElement | null>;
-
   places: Place[];
   loading: boolean;
-
   selectedId: string | null;
   setSelectedId: (id: string | null) => void;
-
   needRefetch: boolean;
   refetchHere: () => Promise<void>;
-
   goMyLocation: () => void;
   search: (keyword: string) => Promise<void>;
-
   toggleLike: (id: string) => Promise<void>;
   focusPlaceById: (id: string) => void;
 };
@@ -128,7 +124,7 @@ export function useKakaoPlaceMap(): UseKakaoPlaceMapReturn {
   const [loading, setLoading] = useState(false);
   const [needRefetch, setNeedRefetch] = useState(false);
 
-  const isLoggedIn = useAuthStore((s) => s.isAuthenticated);
+  const isLoggedIn = useAuthStore((s) => !!s.user);
   const [likedIds, setLikedIds] = useState<Set<string>>(new Set());
 
   // 내 찜 목록 식당 상태값 업데이트
@@ -141,9 +137,7 @@ export function useKakaoPlaceMap(): UseKakaoPlaceMapReturn {
     (async () => {
       try {
         const res = await fetchMyLikeIds();
-        console.log(res);
         const set = new Set(res.data.items.map((x) => String(x.placeId)));
-        console.log(set);
         setLikedIds(set);
       } catch (e) {
         console.error(e);
@@ -257,7 +251,9 @@ export function useKakaoPlaceMap(): UseKakaoPlaceMapReturn {
                 id: String(d.id),
                 name: d.place_name,
                 category: d.category_name?.split(">").pop()?.trim() || d.category_name || "",
-                address: d.road_address_name || d.address_name || "",
+                address: d.address_name || "",
+                roadAddress: d.road_address_name || "",
+                phone: d.phone || "",
                 lat: Number(d.y),
                 lng: Number(d.x),
                 distanceM: d.distance ? Number(d.distance) : undefined,

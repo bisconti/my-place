@@ -6,8 +6,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { Navigate, useNavigate } from "react-router-dom";
 import { useAuth } from "../../hooks/useAuth";
-import { getMyPlaceLikeCount } from "../../api/placeLike.api";
-import { getMyReviewCount } from "../../api/placeReview.api";
+import { getMyPlaceLikeCount } from "../../api/place/placeLike.api";
+import { getMyReviewCount } from "../../api/place/placeReview.api";
 import BackButton from "../../components/form/BackButton";
 import MyPageProfileCard from "../../components/mypage/MyPageProfileCard";
 import MyPageStats from "../../components/mypage/MyPageStats";

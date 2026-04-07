@@ -8,18 +8,25 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import axios, { AxiosError } from "axios";
 import BackButton from "../form/BackButton";
-import { savePlaceReview } from "../../api/placeReview.api";
+import { savePlaceReview } from "../../api/place/placeReview.api";
 import { useAuthStore } from "../../stores/authStore";
 
 type Props = {
-  placeId?: string;
+  place: {
+    id: string;
+    name: string;
+    address?: string;
+    roadAddress?: string;
+    category?: string;
+    phone?: string;
+  };
 };
 
 type ErrorResponse = {
   message: string;
 };
 
-const ReviewWriteView = ({ placeId }: Props) => {
+const ReviewWriteView = ({ place }: Props) => {
   const navigate = useNavigate();
 
   const loginUser = useAuthStore.getState().user;
@@ -68,7 +75,7 @@ const ReviewWriteView = ({ placeId }: Props) => {
   };
 
   const handleSubmit = async () => {
-    if (!placeId) {
+    if (!place.id) {
       alert("장소 정보가 없습니다.");
       return;
     }
@@ -92,7 +99,12 @@ const ReviewWriteView = ({ placeId }: Props) => {
       await savePlaceReview(
         {
           userEmail: loginUser.useremail,
-          placeId,
+          placeId: place.id,
+          placeName: place.name,
+          address: place.address ?? "",
+          roadAddress: place.roadAddress ?? "",
+          category: place.category ?? "",
+          phone: place.phone ?? "",
           rating,
           content,
         },
@@ -115,7 +127,7 @@ const ReviewWriteView = ({ placeId }: Props) => {
     <div className="min-h-screen bg-gray-50 p-4">
       <div className="max-w-2xl mx-auto bg-white rounded-xl shadow-md p-8">
         <div className="relative mb-6">
-          <BackButton path={`/places/${placeId}`} />
+          <BackButton path={`/places/${place.id}`} />
           <h1 className="text-2xl font-bold text-center text-red-600">리뷰 작성</h1>
         </div>
 

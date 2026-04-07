@@ -3,25 +3,25 @@
   기능 
   - 식당 찜 등록/취소, 찜 목록 조회 API 모음
 */
-import { api } from "./api";
-import type { Place } from "../components/layout/PlaceListPanel";
+import { api } from "../api";
 import type {
   MyPlaceLikeListResponse,
   PlaceLikeResponse,
   PlaceLikeToggleRequest,
-} from "../types/place/placeLike.types";
+} from "../../types/place/placeLike.types";
+import type { Place } from "../../types/place/place.types";
 
 // 찜 등록 / 취소
-export const togglePlaceLike = (p: Place, nextLiked: boolean) => {
-  const payload: PlaceLikeToggleRequest = {
-    placeId: p.id,
-    placeName: p.name,
-    address: p.address,
-    category: p.category,
-    liked: nextLiked,
-  };
-
-  return api.post<PlaceLikeResponse>("/api/place-likes/toggle", payload);
+export const togglePlaceLike = (place: Place, liked: boolean) => {
+  return api.post("/api/place-likes/toggle", {
+    placeId: place.id,
+    placeName: place.name,
+    address: place.address,
+    roadAddress: place.roadAddress,
+    category: place.category,
+    phone: place.phone,
+    liked,
+  });
 };
 
 // 내 찜 목록 조회

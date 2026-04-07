@@ -8,7 +8,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { Navigate, useNavigate } from "react-router-dom";
 import { useAuth } from "../../../hooks/useAuth";
 import type { PlaceLikeResponse } from "../../../types/place/placeLike.types";
-import { getMyPlaceLikes, togglePlaceLikeByPayload } from "../../../api/placeLike.api";
+import { getMyPlaceLikes, togglePlaceLikeByPayload } from "../../../api/place/placeLike.api";
 import BackButton from "../../form/BackButton";
 import { formatDateTime } from "../../../utils/common";
 

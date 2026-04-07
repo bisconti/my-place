@@ -5,7 +5,7 @@
 */
 import { useCallback, useEffect, useState } from "react";
 import type { PlaceReviewResponse } from "../../types/place/placeReview.types";
-import { deletePlaceReview, getMyReviews } from "../../api/placeReview.api";
+import { deletePlaceReview, getMyReviews } from "../../api/place/placeReview.api";
 import MyReviewList from "../../components/mypage/MyReviewList";
 import { useAuthStore } from "../../stores/authStore";
 

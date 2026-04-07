@@ -22,7 +22,7 @@ export default function MainContent() {
     focusPlaceById,
   } = useKakaoPlaceMap();
 
-  const isLoggedIn = useAuthStore((s) => s.isAuthenticated);
+  const isLoggedIn = useAuthStore((s) => !!s.user);
 
   const handleSelectPlace = (id: string) => {
     focusPlaceById(id);
