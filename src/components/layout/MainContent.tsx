@@ -4,6 +4,7 @@ import PlaceListPanel from "./PlaceListPanel";
 import MapPanel from "./MapPanel";
 import { useKakaoPlaceMap } from "../../hooks/useKakaoPlaceMap";
 import { useAuthStore } from "../../stores/authStore";
+import { getPlaceDetail } from "../../api/place/place.api";
 
 export default function MainContent() {
   const navigate = useNavigate();
@@ -28,9 +29,10 @@ export default function MainContent() {
     focusPlaceById(id);
   };
 
-  const handleOpenPlaceDetail = (id: string) => {
-    const place = places.find((p) => p.id === id);
-    if (!place) return;
+  const handleOpenPlaceDetail = async (id: string) => {
+    //  const place = places.find((p) => p.id === id);
+    //  if (!place) return;
+    const place = await getPlaceDetail(id);
 
     navigate(`/places/${id}`, {
       state: { place },

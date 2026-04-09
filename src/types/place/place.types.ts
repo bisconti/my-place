@@ -1,3 +1,13 @@
+export interface PlaceImage {
+  id: number;
+  placeId: string;
+  originalFileName?: string;
+  storedFileName: string;
+  filePath: string;
+  fileSize?: number;
+  sortOrder: number;
+}
+
 export interface Place {
   id: string;
   name: string;
@@ -11,4 +21,6 @@ export interface Place {
   rating?: number;
   reviewCount?: number;
   liked?: boolean;
+
+  images?: PlaceImage[];
 }
