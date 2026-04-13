@@ -10,7 +10,7 @@ import { Navigate, useNavigate } from "react-router-dom";
 
 import BackButton from "../form/BackButton";
 import { useAuth } from "../../hooks/useAuth";
-import { getMyProfile, updateMyProfile } from "../../api/user.api";
+import { getMyProfile, updateMyProfile } from "../../api/user/user.api";
 import { EditProfileSchema, type EditProfileFormData } from "../../schemas/userSchema";
 
 const EditProfileForm = () => {

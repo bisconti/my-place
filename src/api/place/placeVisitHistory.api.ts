@@ -1,3 +1,8 @@
+/*
+  파일명: placeVisitHistory.api.ts
+  기능 
+  - 식당 방문 히스토리 추가, 내 식당 방문 히스토리 조회 API 모음
+*/
 import type {
   PlaceVisitedResponse,
   PlaceVisitHistoryCreateRequest,

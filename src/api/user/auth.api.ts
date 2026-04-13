@@ -3,15 +3,15 @@
   기능 
   - 로그인하지 않고 요청할 수 있는 API 정의
 */
-import { http } from "./http";
-import type { LoginFormData, RegisterFormData } from "../schemas/authSchema";
+import { http } from "../http";
+import type { LoginFormData, RegisterFormData } from "../../schemas/authSchema";
 import type {
   EmailDupCheckResponse,
   SendPasswordEmailResponse,
   SignInResponse,
   SignUpResponse,
-} from "../types/user/auth.types";
-import type { ResetPasswordResponse, ValidateResetPasswordTokenResponse } from "../types/user/user.types";
+} from "../../types/user/auth.types";
+import type { ResetPasswordResponse, ValidateResetPasswordTokenResponse } from "../../types/user/user.types";
 
 // 이메일 중복체크
 export const checkEmailDup = (email: string) => {

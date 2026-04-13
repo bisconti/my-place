@@ -1,5 +1,5 @@
-import type { NotificationSettings } from "../types/settings/userSettings.type";
-import { api } from "./api";
+import type { NotificationSettings } from "../../types/settings/userSettings.type";
+import { api } from "../api";
 
 /**
  * ============================

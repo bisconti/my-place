@@ -1,4 +1,8 @@
-// src/api/place.api.ts
+/*
+  파일명: place.api.ts
+  기능 
+  - 식당 상세 조회
+*/
 import { api } from "../api";
 import type { Place } from "../../types/place/place.types";
 

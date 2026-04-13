@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import type { NotificationSettings } from "../../../types/settings/userSettings.type";
-import { getNotificationSettings, updateNotificationSettings } from "../../../api/userSetting.api";
+import { getNotificationSettings, updateNotificationSettings } from "../../../api/settings/userSetting.api";
 
 const NotificationSettingsSection = () => {
   const [settings, setSettings] = useState<NotificationSettings>({

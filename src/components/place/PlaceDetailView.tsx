@@ -1,10 +1,11 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import BackButton from "../form/BackButton";
 import type { Place } from "../../types/place/place.types";
 import type { PlaceReviewResponse, PlaceReviewSummaryResponse } from "../../types/place/placeReview.types";
 import { getPlaceReviews, getPlaceReviewSummary } from "../../api/place/placeReview.api";
 import { getPlaceDetail } from "../../api/place/place.api";
+import { saveRecentPlaceApi } from "../../api/place/recentPlace.api";
 
 type LocationState = {
   place?: Place;
@@ -46,6 +47,20 @@ const PlaceDetailView = () => {
   const [isReviewLoading, setIsReviewLoading] = useState(false);
 
   const [viewerImage, setViewerImage] = useState<ViewerImage | null>(null);
+
+  const calledRef = useRef(false);
+
+  // 최근 방문 식당 저장 로직
+useEffect(() => {
+  if (place?.id && !calledRef.current) {
+    calledRef.current = true;
+
+    saveRecentPlaceApi({ placeId: place.id })
+      .catch(() => {
+        console.warn("최근 본 식당 저장 실패");
+      });
+  }
+}, [place]);
 
   useEffect(() => {
     if (!placeId) return;

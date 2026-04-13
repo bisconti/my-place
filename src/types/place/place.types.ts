@@ -24,3 +24,12 @@ export interface Place {
 
   images?: PlaceImage[];
 }
+
+export interface RecentPlace {
+  id: string;
+  name: string;
+  thumbnail?: string;
+  rating?: number;
+  reviewCount?: number;
+  viewedAt: string;
+}
