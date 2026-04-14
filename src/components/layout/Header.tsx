@@ -10,7 +10,8 @@ import {
   readUserNotification,
 } from "../../api/notification/userNotification.api";
 import type { UserNotification } from "../../types/notification/userNotification.type";
-import { getPlaceDetail } from "../../api/place/place.api";
+import { getPlaceDetail, getPlaceAutoCompleteList } from "../../api/place/place.api";
+import type { PlaceAutoCompleteItem } from "../../types/place/place.types";
 
 /** =========================
  * Config
@@ -87,12 +88,15 @@ const Header = () => {
   const [isNotificationOpen, setIsNotificationOpen] = useState(false);
   const [isNotificationLoading, setIsNotificationLoading] = useState(false);
 
+  const [searchKeyword, setSearchKeyword] = useState("");
+  const [suggestions, setSuggestions] = useState<PlaceAutoCompleteItem[]>([]);
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [isSearchLoading, setIsSearchLoading] = useState(false);
+
   const notificationRef = useRef<HTMLDivElement | null>(null);
+  const searchRef = useRef<HTMLDivElement | null>(null);
 
-  // 만료 처리 중복 방지
   const expiredHandledRef = useRef(false);
-
-  // 활동 기록 저장 과도 방지
   const lastWriteRef = useRef(0);
 
   const touchActivity = () => {
@@ -133,9 +137,56 @@ const Header = () => {
     }
   };
 
-  /** =========================
-   * 로그인/로그아웃 변화 처리
-   * ========================= */
+  const handleSearch = useCallback(async (keyword: string) => {
+    const trimmedKeyword = keyword.trim();
+
+    if (!trimmedKeyword) {
+      setSuggestions([]);
+      setIsSearchOpen(false);
+      return;
+    }
+
+    try {
+      setIsSearchLoading(true);
+      const data = await getPlaceAutoCompleteList(trimmedKeyword);
+      setSuggestions(data);
+      setIsSearchOpen(true);
+    } catch (error) {
+      console.error("식당 자동완성 조회 실패", error);
+      setSuggestions([]);
+      setIsSearchOpen(false);
+    } finally {
+      setIsSearchLoading(false);
+    }
+  }, []);
+
+  const handleSelectSuggestion = async (item: PlaceAutoCompleteItem) => {
+    try {
+      setSearchKeyword(item.placeName);
+      setIsSearchOpen(false);
+
+      const place = await getPlaceDetail(item.placeId);
+
+      navigate(`/places/${item.placeId}`, {
+        state: { place },
+      });
+    } catch (error) {
+      console.error("식당 상세 이동 실패", error);
+      toast.error("식당 정보를 불러오지 못했습니다.");
+    }
+  };
+
+  const handleSubmitSearch = async () => {
+    if (!searchKeyword.trim()) return;
+
+    if (suggestions.length > 0) {
+      await handleSelectSuggestion(suggestions[0]);
+      return;
+    }
+
+    toast("일치하는 식당을 찾지 못했습니다.");
+  };
+
   useEffect(() => {
     expiredHandledRef.current = false;
 
@@ -151,15 +202,11 @@ const Header = () => {
     fetchUnreadCount();
   }, [user, fetchUnreadCount]);
 
-  // 활동 처리
   useEffect(() => {
     if (!user) return;
     touchActivity();
   }, [location.pathname, user]);
 
-  /** =========================
-   * 사용자 활동 이벤트 바인딩
-   * ========================= */
   useEffect(() => {
     if (!user) return;
 
@@ -180,14 +227,14 @@ const Header = () => {
     };
   }, [user]);
 
-  /** =========================
-   * 알림 바깥 클릭 닫기
-   * ========================= */
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (!notificationRef.current) return;
-      if (!notificationRef.current.contains(event.target as Node)) {
+      if (notificationRef.current && !notificationRef.current.contains(event.target as Node)) {
         setIsNotificationOpen(false);
+      }
+
+      if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
+        setIsSearchOpen(false);
       }
     };
 
@@ -195,9 +242,20 @@ const Header = () => {
     return () => window.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  /** =========================
-   * 1초마다 남은시간 계산
-   * ========================= */
+  useEffect(() => {
+    if (!searchKeyword.trim()) {
+      setSuggestions([]);
+      setIsSearchOpen(false);
+      return;
+    }
+
+    const timer = window.setTimeout(() => {
+      handleSearch(searchKeyword);
+    }, 250);
+
+    return () => window.clearTimeout(timer);
+  }, [searchKeyword, handleSearch]);
+
   useEffect(() => {
     if (!user) return;
 
@@ -216,9 +274,6 @@ const Header = () => {
     return () => window.clearInterval(id);
   }, [user]);
 
-  /** =========================
-   * 만료 처리
-   * ========================= */
   useEffect(() => {
     if (!user) return;
     if (leftSec === null) return;
@@ -282,6 +337,7 @@ const Header = () => {
       toast.error("알림 처리에 실패했습니다.");
     }
   };
+
   const handleReadAllNotifications = async () => {
     try {
       await readAllUserNotifications();
@@ -306,22 +362,34 @@ const Header = () => {
     <header className="sticky top-0 z-50 bg-white shadow-md">
       <div className="w-full px-4 sm:px-6 lg:px-8">
         <div className="grid grid-cols-3 items-center h-16">
-          {/* 왼쪽 */}
           <div className="justify-self-start">
             <a href="/" className="text-2xl font-bold text-red-600 hover:text-red-700">
               잇츠맵
             </a>
           </div>
 
-          {/* 가운데 */}
           <div className="hidden md:flex justify-self-center w-full max-w-2xl">
-            <div className="relative w-full">
+            <div className="relative w-full" ref={searchRef}>
               <input
                 type="text"
+                value={searchKeyword}
+                onChange={(e) => setSearchKeyword(e.target.value)}
+                onFocus={() => {
+                  if (suggestions.length > 0) {
+                    setIsSearchOpen(true);
+                  }
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    handleSubmitSearch();
+                  }
+                }}
                 placeholder="식당, 메뉴, 지역을 검색해보세요"
                 className="w-full py-2 pl-4 pr-10 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
               />
               <button
+                type="button"
+                onClick={handleSubmitSearch}
                 className="absolute right-0 top-0 mt-2 mr-3 text-gray-500 hover:text-red-600"
                 aria-label="검색 실행"
               >
@@ -334,10 +402,33 @@ const Header = () => {
                   />
                 </svg>
               </button>
+
+              {isSearchOpen && (
+                <div className="absolute top-full mt-2 w-full bg-white border border-gray-200 rounded-xl shadow-lg overflow-hidden z-50">
+                  {isSearchLoading ? (
+                    <div className="px-4 py-3 text-sm text-gray-500">검색 중입니다...</div>
+                  ) : suggestions.length === 0 ? (
+                    <div className="px-4 py-3 text-sm text-gray-500">검색 결과가 없습니다.</div>
+                  ) : (
+                    suggestions.map((item) => (
+                      <button
+                        key={item.placeId}
+                        type="button"
+                        onClick={() => handleSelectSuggestion(item)}
+                        className="w-full px-4 py-3 text-left hover:bg-red-50 border-b last:border-b-0"
+                      >
+                        <div className="text-sm font-semibold text-gray-900">{item.placeName}</div>
+                        <div className="text-xs text-gray-500">
+                          {item.category} · {item.roadAddress}
+                        </div>
+                      </button>
+                    ))
+                  )}
+                </div>
+              )}
             </div>
           </div>
 
-          {/* 오른쪽 */}
           <div className="justify-self-end flex items-center gap-4">
             {user ? (
               <div className="flex items-center space-x-4 p-2 bg-indigo-50 rounded-full">
@@ -363,7 +454,6 @@ const Header = () => {
             )}
 
             <div className="flex items-center gap-2">
-              {/* 알림 버튼 */}
               <div className="relative" ref={notificationRef}>
                 <button
                   type="button"
@@ -458,7 +548,6 @@ const Header = () => {
                 )}
               </div>
 
-              {/* 세션 남은시간 */}
               {user && leftSec !== null && (
                 <div
                   className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-slate-100 text-slate-700 text-xs font-semibold border border-slate-200"
@@ -469,7 +558,6 @@ const Header = () => {
                 </div>
               )}
 
-              {/* 사용자 아이콘 */}
               <button
                 className="text-gray-600 hover:text-red-600 focus:outline-none"
                 aria-label="사용자 메뉴"

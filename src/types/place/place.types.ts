@@ -33,3 +33,11 @@ export interface RecentPlace {
   reviewCount?: number;
   viewedAt: string;
 }
+
+// header 영역 식당 자동검색 type
+export interface PlaceAutoCompleteItem {
+  placeId: string;
+  placeName: string;
+  category: string;
+  roadAddress: string;
+}
