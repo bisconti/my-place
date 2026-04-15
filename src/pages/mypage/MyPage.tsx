@@ -8,11 +8,13 @@ import { Navigate, useNavigate } from "react-router-dom";
 import { useAuth } from "../../hooks/useAuth";
 import { getMyPlaceLikeCount } from "../../api/place/placeLike.api";
 import { getMyReviewCount } from "../../api/place/placeReview.api";
+import { getRecentPlacesApi } from "../../api/place/recentPlace.api";
 import BackButton from "../../components/form/BackButton";
 import MyPageProfileCard from "../../components/mypage/MyPageProfileCard";
 import MyPageStats from "../../components/mypage/MyPageStats";
 import MyPageMenu from "../../components/mypage/MyPageMenu";
 import MyPageRecentActivities from "../../components/mypage/MyPageRecentActivities";
+import RecentPlace from "../../components/mypage/RecentPlace";
 
 const MyPage = () => {
   const navigate = useNavigate();
@@ -20,16 +22,31 @@ const MyPage = () => {
 
   const [likeCount, setLikeCount] = useState(0);
   const [reviewCount, setReviewCount] = useState(0);
+  const [recentPlaceCount, setRecentPlaceCount] = useState(0);
+  const [isRecentPlaceVisible, setIsRecentPlaceVisible] = useState(false);
 
   useEffect(() => {
     if (!user?.useremail) return;
 
     const fetchMyPageCounts = async () => {
       try {
-        const [likeRes, reviewRes] = await Promise.all([getMyPlaceLikeCount(), getMyReviewCount(user.useremail)]);
+        const [likeResult, reviewResult, recentResult] = await Promise.allSettled([
+          getMyPlaceLikeCount(),
+          getMyReviewCount(user.useremail),
+          getRecentPlacesApi(),
+        ]);
 
-        setLikeCount(likeRes.data);
-        setReviewCount(reviewRes.data);
+        if (likeResult.status === "fulfilled") {
+          setLikeCount(likeResult.value.data);
+        }
+
+        if (reviewResult.status === "fulfilled") {
+          setReviewCount(reviewResult.value.data);
+        }
+
+        if (recentResult.status === "fulfilled") {
+          setRecentPlaceCount(recentResult.value.length);
+        }
       } catch (err) {
         console.error("마이페이지 통계 조회 실패", err);
       }
@@ -42,9 +59,14 @@ const MyPage = () => {
     () => [
       { label: "내 리뷰", value: reviewCount, desc: "작성한 리뷰 수" },
       { label: "찜한 맛집", value: likeCount, desc: "저장한 맛집 수" },
-      { label: "최근 방문", value: 0, desc: "최근 방문 기록" },
+      {
+        label: "최근 방문",
+        value: recentPlaceCount,
+        desc: "최근 방문 기록",
+        onClick: () => setIsRecentPlaceVisible((prev) => !prev),
+      },
     ],
-    [likeCount, reviewCount]
+    [likeCount, recentPlaceCount, reviewCount]
   );
 
   const recentActivities = useMemo(
@@ -77,6 +99,8 @@ const MyPage = () => {
         <MyPageProfileCard user={user} onEditProfile={() => navigate("/mypage/profile")} onLogout={handleLogout} />
 
         <MyPageStats stats={stats} />
+
+        {isRecentPlaceVisible && <RecentPlace />}
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <MyPageMenu

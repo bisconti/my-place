@@ -11,7 +11,7 @@ import { Link, useNavigate } from "react-router-dom";
 import BackButton from "../form/BackButton";
 import { LoginSchema, type LoginFormData } from "../../schemas/authSchema";
 import { useAuthStore } from "../../stores/authStore";
-import { signIn } from "../../api/auth.api";
+import { signIn } from "../../api/user/auth.api";
 
 const LoginForm = () => {
   const navigate = useNavigate();

@@ -11,7 +11,7 @@ import toast from "react-hot-toast";
 
 import BackButton from "../form/BackButton";
 import InputField from "../share/InputField";
-import { signUp } from "../../api/auth.api";
+import { signUp } from "../../api/user/auth.api";
 import { useEmailDuplication } from "../../hooks/useEmailDuplication";
 import { RegisterSchema, type RegisterFormData } from "../../schemas/authSchema";
 

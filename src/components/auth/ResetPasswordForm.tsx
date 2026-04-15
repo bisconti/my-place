@@ -10,7 +10,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import toast from "react-hot-toast";
 
 import { ResetPasswordSchema, type ResetPasswordFormData } from "../../schemas/authSchema";
-import { resetPassword, validateResetPasswordToken } from "../../api/auth.api";
+import { resetPassword, validateResetPasswordToken } from "../../api/user/auth.api";
 import BackButton from "../form/BackButton";
 
 const ResetPasswordForm = () => {

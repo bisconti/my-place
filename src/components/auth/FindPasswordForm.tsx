@@ -8,7 +8,7 @@ import { useState } from "react";
 import { useForm, type SubmitHandler } from "react-hook-form";
 
 import { FindPasswordSchema } from "../../schemas/authSchema";
-import { sendPasswordEmail } from "../../api/auth.api";
+import { sendPasswordEmail } from "../../api/user/auth.api";
 import BackButton from "../form/BackButton";
 import type { FindPasswordFormData } from "../../types/user/user.types";
 
