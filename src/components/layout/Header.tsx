@@ -1,3 +1,8 @@
+/*
+  file: Header.tsx
+  description
+  - 인증, 검색, 알림 기능을 포함한 공통 헤더 컴포넌트
+*/
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";

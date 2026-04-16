@@ -1,3 +1,8 @@
+/*
+  file: RecentPlace.tsx
+  description
+  - 마이페이지에서 최근 방문 식당 목록을 보여주는 컴포넌트
+*/
 import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { getRecentPlacesApi } from "../../api/place/recentPlace.api";

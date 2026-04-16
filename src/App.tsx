@@ -1,3 +1,8 @@
+/*
+  file: App.tsx
+  description
+  - 애플리케이션의 라우팅과 주요 페이지 구성을 담당하는 최상위 컴포넌트
+*/
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 import "./App.css";
 import MainLayout from "./components/layout/MainLayout";

@@ -1,3 +1,8 @@
+/*
+  file: EditProfile.tsx
+  description
+  - 사용자 프로필 정보를 수정하는 컴포넌트
+*/
 import { yupResolver } from "@hookform/resolvers/yup";
 import axios from "axios";
 import { useEffect, useMemo, useState } from "react";

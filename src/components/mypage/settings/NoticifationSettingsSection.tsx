@@ -1,3 +1,8 @@
+/*
+  file: NoticifationSettingsSection.tsx
+  description
+  - 사용자 알림 설정 항목을 표시하고 변경하는 컴포넌트
+*/
 import { useEffect, useState } from "react";
 import type { NotificationSettings } from "../../../types/settings/userSettings.type";
 import { getNotificationSettings, updateNotificationSettings } from "../../../api/settings/userSetting.api";

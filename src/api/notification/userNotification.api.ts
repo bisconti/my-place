@@ -1,3 +1,8 @@
+/*
+  file: userNotification.api.ts
+  description
+  - 사용자 알림 조회 및 읽음 처리 관련 API 함수를 모아둔 파일
+*/
 import type { UnreadNotificationCountResponse, UserNotification } from "../../types/notification/userNotification.type";
 import { api } from "../api";
 

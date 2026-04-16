@@ -1,3 +1,8 @@
+/*
+  file: recentPlace.api.ts
+  description
+  - 최근 방문 식당 저장 및 조회 관련 API 함수를 모아둔 파일
+*/
 // src/api/recentPlace.api.ts
 
 import { api } from "../api";

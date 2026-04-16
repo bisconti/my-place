@@ -1,3 +1,8 @@
+/*
+  file: ChangePassword.tsx
+  description
+  - 마이페이지에서 비밀번호 변경 기능을 제공하는 컴포넌트
+*/
 import { yupResolver } from "@hookform/resolvers/yup";
 import axios from "axios";
 import { useMemo, useState } from "react";

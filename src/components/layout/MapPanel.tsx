@@ -1,3 +1,8 @@
+/*
+  file: MapPanel.tsx
+  description
+  - 지도 영역과 현재 위치 재검색 버튼 UI를 렌더링하는 컴포넌트
+*/
 import React from "react";
 
 type Props = {

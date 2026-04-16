@@ -1,3 +1,8 @@
+/*
+  file: authSchema.ts
+  description
+  - 로그인, 회원가입 등 인증 폼 검증 스키마를 정의하는 파일
+*/
 import * as yup from "yup";
 
 // 이메일 정규식, 메시지

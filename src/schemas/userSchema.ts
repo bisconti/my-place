@@ -1,3 +1,8 @@
+/*
+  file: userSchema.ts
+  description
+  - 사용자 정보 관련 폼 검증 스키마를 정의하는 파일
+*/
 import * as yup from "yup";
 
 // 비밀번호 정규식, 메시지

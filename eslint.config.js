@@ -1,3 +1,8 @@
+/*
+  file: eslint.config.js
+  description
+  - 프로젝트 전반의 ESLint 규칙을 설정하는 파일
+*/
 import js from '@eslint/js'
 import globals from 'globals'
 import reactHooks from 'eslint-plugin-react-hooks'

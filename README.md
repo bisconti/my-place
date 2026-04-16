@@ -1,3 +1,8 @@
+<!--
+  file: README.md
+  description
+  - 프로젝트 개요와 실행 방법을 안내하는 문서
+-->
 # React + TypeScript + Vite
 
 This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.

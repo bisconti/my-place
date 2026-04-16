@@ -1,3 +1,8 @@
+/*
+  file: eslint.config.ts
+  description
+  - TypeScript 기반 ESLint 규칙을 설정하는 파일
+*/
 import eslint from "@eslint/js";
 import tseslint from "@typescript-eslint/eslint-plugin";
 import tsparser from "@typescript-eslint/parser";

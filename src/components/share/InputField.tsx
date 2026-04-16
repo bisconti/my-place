@@ -1,3 +1,8 @@
+/*
+  file: InputField.tsx
+  description
+  - 여러 폼 화면에서 재사용하는 공통 입력 필드 컴포넌트
+*/
 import type { FieldErrors, FieldValues, Path, UseFormRegister } from "react-hook-form";
 
 type InputFieldProps<T extends FieldValues> = {

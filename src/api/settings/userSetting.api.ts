@@ -1,3 +1,8 @@
+/*
+  file: userSetting.api.ts
+  description
+  - 사용자 설정 조회 및 수정 관련 API 함수를 모아둔 파일
+*/
 import type { NotificationSettings } from "../../types/settings/userSettings.type";
 import { api } from "../api";
 

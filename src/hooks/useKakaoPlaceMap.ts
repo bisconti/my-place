@@ -1,9 +1,20 @@
+/*
+  file: useKakaoPlaceMap.ts
+  description
+  - 카카오 지도 상태, 현재 위치, 검색, 마커 관리를 담당하는 커스텀 훅
+*/
 import { useCallback, useEffect, useRef, useState } from "react";
 import { fetchMyLikeIds, togglePlaceLike } from "../api/place/placeLike.api";
 import { useAuthStore } from "../stores/authStore";
 import type { Place } from "../types/place/place.types";
 
 const DEFAULT_CENTER = { lat: 37.5665, lng: 126.978 }; // 서울시청
+const MAP_STATE_KEY = "kakao-place-map-state";
+
+type MapCenter = {
+  lat: number;
+  lng: number;
+};
 
 function getGeolocation(): Promise<{ lat: number; lng: number }> {
   return new Promise((resolve, reject) => {
@@ -46,6 +57,7 @@ type KakaoBounds = {
 
 type KakaoMap = {
   getBounds(): KakaoBounds;
+  getCenter(): KakaoLatLng;
   setCenter(latlng: KakaoLatLng): void;
   panTo(latlng: KakaoLatLng): void;
   relayout(): void;
@@ -106,7 +118,32 @@ type UseKakaoPlaceMapReturn = {
   focusPlaceById: (id: string) => void;
 };
 
+function readSavedMapCenter(): MapCenter | null {
+  try {
+    const raw = window.sessionStorage.getItem(MAP_STATE_KEY);
+    if (!raw) return null;
+
+    const parsed = JSON.parse(raw) as Partial<MapCenter>;
+    if (typeof parsed.lat !== "number" || typeof parsed.lng !== "number") {
+      return null;
+    }
+
+    return { lat: parsed.lat, lng: parsed.lng };
+  } catch {
+    return null;
+  }
+}
+
+function saveMapCenter(center: MapCenter) {
+  try {
+    window.sessionStorage.setItem(MAP_STATE_KEY, JSON.stringify(center));
+  } catch {
+    // ignore storage failures
+  }
+}
+
 export function useKakaoPlaceMap(): UseKakaoPlaceMapReturn {
+  const restoredCenterRef = useRef<MapCenter | null>(typeof window !== "undefined" ? readSavedMapCenter() : null);
   const mapRef = useRef<HTMLDivElement | null>(null);
   const programMoveRef = useRef(false);
 
@@ -115,8 +152,8 @@ export function useKakaoPlaceMap(): UseKakaoPlaceMapReturn {
   const markersRef = useRef<Map<string, KakaoMarker>>(new Map());
   const infoRef = useRef<KakaoInfoWindow | null>(null);
 
-  const [userPos, setUserPos] = useState(DEFAULT_CENTER);
-  const [center, setCenter] = useState(DEFAULT_CENTER);
+  const [userPos, setUserPos] = useState(restoredCenterRef.current ?? DEFAULT_CENTER);
+  const [center, setCenter] = useState(restoredCenterRef.current ?? DEFAULT_CENTER);
 
   const [keyword, setKeyword] = useState("");
   const [places, setPlaces] = useState<Place[]>([]);
@@ -332,6 +369,8 @@ export function useKakaoPlaceMap(): UseKakaoPlaceMapReturn {
     if (!map) return;
 
     programMoveRef.current = true;
+    setCenter(userPos);
+    saveMapCenter(userPos);
     map.panTo(new kakao.maps.LatLng(userPos.lat, userPos.lng));
 
     window.setTimeout(() => {
@@ -370,19 +409,32 @@ export function useKakaoPlaceMap(): UseKakaoPlaceMapReturn {
       // 사용자 조작일 때만 재검색 버튼 노출
       kakao.maps.event.addListener(map, "dragend", () => {
         if (programMoveRef.current) return;
+        const current = map.getCenter();
+        const nextCenter = { lat: current.getLat(), lng: current.getLng() };
+        setCenter(nextCenter);
+        saveMapCenter(nextCenter);
         setNeedRefetch(true);
       });
       kakao.maps.event.addListener(map, "zoom_changed", () => {
         if (programMoveRef.current) return;
+        const current = map.getCenter();
+        const nextCenter = { lat: current.getLat(), lng: current.getLng() };
+        setCenter(nextCenter);
+        saveMapCenter(nextCenter);
         setNeedRefetch(true);
       });
 
       (async () => {
+        const restoredCenter = restoredCenterRef.current;
+
         try {
           const pos = await getGeolocation();
           setUserPos(pos);
-          setCenter(pos);
-          map.setCenter(new kakao.maps.LatLng(pos.lat, pos.lng));
+          if (!restoredCenter) {
+            setCenter(pos);
+            saveMapCenter(pos);
+            map.setCenter(new kakao.maps.LatLng(pos.lat, pos.lng));
+          }
 
           await fetchPlaces();
           setNeedRefetch(false);
@@ -413,6 +465,8 @@ export function useKakaoPlaceMap(): UseKakaoPlaceMapReturn {
     if (!map) return;
 
     programMoveRef.current = true;
+    setCenter({ lat: p.lat, lng: p.lng });
+    saveMapCenter({ lat: p.lat, lng: p.lng });
     map.panTo(new kakao.maps.LatLng(p.lat, p.lng));
     openInfo(p);
 

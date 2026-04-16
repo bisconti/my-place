@@ -1,3 +1,8 @@
+/*
+  file: PlaceDetailView.tsx
+  description
+  - 식당 상세 정보와 이미지, 리뷰를 보여주는 컴포넌트
+*/
 import { useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import BackButton from "../form/BackButton";
@@ -6,6 +11,7 @@ import type { PlaceReviewResponse, PlaceReviewSummaryResponse } from "../../type
 import { getPlaceReviews, getPlaceReviewSummary } from "../../api/place/placeReview.api";
 import { getPlaceDetail } from "../../api/place/place.api";
 import { saveRecentPlaceApi } from "../../api/place/recentPlace.api";
+import { useAuthStore } from "../../stores/authStore";
 
 type LocationState = {
   place?: Place;
@@ -38,6 +44,7 @@ const PlaceDetailView = () => {
   const { placeId } = useParams();
   const location = useLocation();
   const state = location.state as LocationState | null;
+  const token = useAuthStore((s) => s.token);
 
   const [place, setPlace] = useState<Place | null>(state?.place ?? null);
   const [isPlaceLoading, setIsPlaceLoading] = useState(false);
@@ -52,7 +59,7 @@ const PlaceDetailView = () => {
 
   // 최근 방문 식당 저장 로직
 useEffect(() => {
-  if (place?.id && !calledRef.current) {
+  if (token && place?.id && !calledRef.current) {
     calledRef.current = true;
 
     saveRecentPlaceApi({ placeId: place.id })
@@ -60,7 +67,7 @@ useEffect(() => {
         console.warn("최근 본 식당 저장 실패");
       });
   }
-}, [place]);
+}, [place, token]);
 
   useEffect(() => {
     if (!placeId) return;
@@ -133,6 +140,11 @@ useEffect(() => {
 
   const goReviewWrite = () => {
     if (!place) return;
+    if (!token) {
+      alert("로그인 후 이용가능합니다.");
+      navigate("/login");
+      return;
+    }
 
     navigate(`/places/${placeId}/reviews/write`, {
       state: {

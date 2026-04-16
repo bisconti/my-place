@@ -1,3 +1,8 @@
+/*
+  file: PlaceListPanel.tsx
+  description
+  - 식당 목록 선택과 상세 이동을 처리하는 리스트 패널 컴포넌트
+*/
 import type { Place } from "../../types/place/place.types";
 
 function formatDistance(m?: number) {

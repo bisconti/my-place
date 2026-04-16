@@ -1,3 +1,8 @@
+/*
+  file: SettingsPage.tsx
+  description
+  - 마이페이지 설정 화면을 감싸는 페이지 컴포넌트
+*/
 import NotificationSettingsSection from "../../components/mypage/settings/NoticifationSettingsSection";
 import BackButton from "../../components/form/BackButton";
 

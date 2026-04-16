@@ -1,3 +1,8 @@
+/*
+  file: place.types.ts
+  description
+  - 식당 도메인의 핵심 타입을 정의하는 파일
+*/
 export interface PlaceImage {
   id: number;
   placeId: string;
