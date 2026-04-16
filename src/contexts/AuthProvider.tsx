@@ -36,7 +36,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   );
 
   const logout = useCallback(() => {
-    logoutStore({ silent: false });
+    logoutStore({ silent: true, reason: "manual" });
   }, [logoutStore]);
 
   const updateUser = useCallback(

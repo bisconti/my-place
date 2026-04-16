@@ -1,30 +1,31 @@
-/*
+﻿/*
   file: App.tsx
   description
   - 애플리케이션의 라우팅과 주요 페이지 구성을 담당하는 최상위 컴포넌트
 */
 import { BrowserRouter, Route, Routes } from "react-router-dom";
+import { Toaster } from "react-hot-toast";
 import "./App.css";
 import MainLayout from "./components/layout/MainLayout";
-import { AuthProvider } from "./contexts/AuthProvider";
 import ChangePassword from "./components/mypage/ChangePassword";
-import { Toaster } from "react-hot-toast";
+import { AuthProvider } from "./contexts/AuthProvider";
 import FindPasswordPage from "./pages/auth/FindPasswordPage";
-import ResetPasswordPage from "./pages/auth/ResetPasswordPage";
 import LoginPage from "./pages/auth/LoginPage";
+import ResetPasswordPage from "./pages/auth/ResetPasswordPage";
 import SignUpPage from "./pages/auth/SignUpPage";
 import EditProfilePage from "./pages/mypage/EditProfilePage";
+import MyReviewsPage from "./pages/mypage/MyReviewPage";
 import MyPage from "./pages/mypage/MyPage";
+import SettingsPage from "./pages/mypage/SettingsPage";
 import FavoritesPage from "./pages/mypage/favorites/FavoritesPage";
+import PlaceCollectionDetailPage from "./pages/mypage/placeCollections/PlaceCollectionDetailPage";
+import PlaceCollectionPage from "./pages/mypage/placeCollections/PlaceCollectionPage";
 import PlaceDetailPage from "./pages/place/PlaceDetailPage";
 import ReviewWritePage from "./pages/review/ReviewWritePage";
-import MyReviewsPage from "./pages/mypage/MyReviewPage";
-import SettingsPage from "./pages/mypage/SettingsPage";
 
 function App() {
   return (
     <BrowserRouter>
-      {/* AuthContextProvider로 전체 routing을 감싸서 모든 자식 component가 Context에 접근할 수 있도록 보장 */}
       <AuthProvider>
         <Toaster
           position="bottom-right"
@@ -36,6 +37,7 @@ function App() {
             },
           }}
         />
+
         <div className="min-h-screen bg-gray-50">
           <Routes>
             <Route path="/" element={<MainLayout />} />
@@ -46,6 +48,8 @@ function App() {
             <Route path="/mypage" element={<MyPage />} />
             <Route path="/mypage/profile" element={<EditProfilePage />} />
             <Route path="/mypage/change-password" element={<ChangePassword />} />
+            <Route path="/mypage/place-collections" element={<PlaceCollectionPage />} />
+            <Route path="/mypage/place-collections/:collectionId" element={<PlaceCollectionDetailPage />} />
             <Route path="/mypage/favorites" element={<FavoritesPage />} />
             <Route path="/mypage/reviews" element={<MyReviewsPage />} />
             <Route path="/mypage/settings" element={<SettingsPage />} />

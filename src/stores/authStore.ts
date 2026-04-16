@@ -19,7 +19,7 @@ type AuthStore = {
   setAccessToken: (token: string | null) => void;
   setRefreshToken: (refreshToken: string | null) => void;
   setUser: (user: User | null) => void;
-  logout: (options?: { silent?: boolean }) => void;
+  logout: (options?: { silent?: boolean; reason?: "manual" | "expired" }) => void;
 };
 
 export const useAuthStore = create<AuthStore>((set) => ({
@@ -89,7 +89,7 @@ export const useAuthStore = create<AuthStore>((set) => ({
     set({ user });
   },
 
-  logout: ({ silent = false } = {}) => {
+  logout: ({ silent = false, reason = "expired" } = {}) => {
     authStorage.clearAllAuth();
 
     set({
@@ -100,14 +100,19 @@ export const useAuthStore = create<AuthStore>((set) => ({
     });
 
     if (!silent) {
-      alert("로그인이 만료되었습니다. 다시 로그인해주세요.");
+      if (reason === "manual") {
+        window.location.href = "/";
+        return;
+      }
+
+      alert("세션이 만료되어 로그아웃되었어요. 다시 로그인해 주세요.");
       window.location.href = "/login";
     }
   },
 }));
 
 export const runOnUnauthorized = ({ silent = false }: { silent?: boolean } = {}) => {
-  useAuthStore.getState().logout({ silent });
+  useAuthStore.getState().logout({ silent, reason: "expired" });
 };
 
 export const isDuringBoot = () => {

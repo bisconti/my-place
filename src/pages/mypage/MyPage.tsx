@@ -1,20 +1,20 @@
-/*
-  파일명: MyPage.tsx
-  describe
-  - 마이페이지
+﻿/*
+  파일명 MyPage.tsx
+  기능
+  - 마이페이지의 프로필, 통계, 메뉴, 최근 방문 영역을 구성
 */
 import { useEffect, useMemo, useState } from "react";
 import { Navigate, useNavigate } from "react-router-dom";
-import { useAuth } from "../../hooks/useAuth";
 import { getMyPlaceLikeCount } from "../../api/place/placeLike.api";
-import { getMyReviewCount } from "../../api/place/placeReview.api";
 import { getRecentPlacesApi } from "../../api/place/recentPlace.api";
+import { getMyReviewCount } from "../../api/place/placeReview.api";
 import BackButton from "../../components/form/BackButton";
-import MyPageProfileCard from "../../components/mypage/MyPageProfileCard";
-import MyPageStats from "../../components/mypage/MyPageStats";
 import MyPageMenu from "../../components/mypage/MyPageMenu";
+import MyPageProfileCard from "../../components/mypage/MyPageProfileCard";
 import MyPageRecentActivities from "../../components/mypage/MyPageRecentActivities";
+import MyPageStats from "../../components/mypage/MyPageStats";
 import RecentPlace from "../../components/mypage/RecentPlace";
+import { useAuth } from "../../hooks/useAuth";
 
 const MyPage = () => {
   const navigate = useNavigate();
@@ -47,18 +47,18 @@ const MyPage = () => {
         if (recentResult.status === "fulfilled") {
           setRecentPlaceCount(recentResult.value.length);
         }
-      } catch (err) {
-        console.error("마이페이지 통계 조회 실패", err);
+      } catch (error) {
+        console.error("마이페이지 통계 조회 실패", error);
       }
     };
 
-    fetchMyPageCounts();
+    void fetchMyPageCounts();
   }, [user?.useremail]);
 
   const stats = useMemo(
     () => [
       { label: "내 리뷰", value: reviewCount, desc: "작성한 리뷰 수" },
-      { label: "찜한 맛집", value: likeCount, desc: "저장한 맛집 수" },
+      { label: "찜한 맛집", value: likeCount, desc: "좋아요한 식당 수" },
       {
         label: "최근 방문",
         value: recentPlaceCount,
@@ -71,9 +71,9 @@ const MyPage = () => {
 
   const recentActivities = useMemo(
     () => [
-      { title: "아직 활동이 없어요", meta: "리뷰를 작성해보세요." },
-      { title: "찜 기능을 사용해보세요", meta: "마음에 드는 맛집을 저장!" },
-      { title: "방문 기록을 남겨보세요", meta: "나만의 맛집 지도 완성" },
+      { title: "리뷰를 남겨보세요", meta: "방문한 식당 경험을 기록할 수 있어요." },
+      { title: "저장 리스트를 만들어보세요", meta: "치킨, 데이트, 혼밥처럼 목적별로 모아둘 수 있어요." },
+      { title: "최근 방문 기록을 확인해보세요", meta: "다시 가고 싶은 식당을 빠르게 찾을 수 있어요." },
     ],
     []
   );
@@ -93,7 +93,7 @@ const MyPage = () => {
         <div className="relative mb-6">
           <BackButton path="/" />
           <h1 className="text-2xl sm:text-3xl font-bold text-center text-red-600">마이페이지</h1>
-          <p className="text-center text-gray-500 mt-2">내 정보와 활동을 한눈에 확인하세요.</p>
+          <p className="text-center text-gray-500 mt-2">내 정보와 활동 내역을 한눈에 확인해보세요.</p>
         </div>
 
         <MyPageProfileCard user={user} onEditProfile={() => navigate("/mypage/profile")} onLogout={handleLogout} />
@@ -106,6 +106,7 @@ const MyPage = () => {
           <MyPageMenu
             onProfile={() => navigate("/mypage/profile")}
             onChangePassword={() => navigate("/mypage/change-password")}
+            onCollections={() => navigate("/mypage/place-collections")}
             onFavorites={() => navigate("/mypage/favorites")}
             onReviews={() => navigate("/mypage/reviews")}
             onSettings={() => navigate("/mypage/settings")}

@@ -1,17 +1,21 @@
-/*
+﻿/*
   file: PlaceDetailView.tsx
   description
-  - 식당 상세 정보와 이미지, 리뷰를 보여주는 컴포넌트
+  - 식당 상세 정보, 이미지, 리뷰와 저장 리스트 기능을 제공하는 컴포넌트
 */
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import toast from "react-hot-toast";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
-import BackButton from "../form/BackButton";
-import type { Place } from "../../types/place/place.types";
-import type { PlaceReviewResponse, PlaceReviewSummaryResponse } from "../../types/place/placeReview.types";
-import { getPlaceReviews, getPlaceReviewSummary } from "../../api/place/placeReview.api";
+import { getMyPlaceCollections } from "../../api/place/placeCollection.api";
 import { getPlaceDetail } from "../../api/place/place.api";
+import { getPlaceReviews, getPlaceReviewSummary } from "../../api/place/placeReview.api";
 import { saveRecentPlaceApi } from "../../api/place/recentPlace.api";
 import { useAuthStore } from "../../stores/authStore";
+import type { PlaceCollectionSummary } from "../../types/place/placeCollection.types";
+import type { Place } from "../../types/place/place.types";
+import type { PlaceReviewResponse, PlaceReviewSummaryResponse } from "../../types/place/placeReview.types";
+import BackButton from "../form/BackButton";
+import PlaceCollectionSaveModal from "./PlaceCollectionSaveModal";
 
 type LocationState = {
   place?: Place;
@@ -36,7 +40,8 @@ function formatDate(dateString?: string) {
 }
 
 function renderStars(rating: number) {
-  return "★".repeat(rating) + "☆".repeat(5 - rating);
+  const safeRating = Math.max(0, Math.min(5, Math.round(rating)));
+  return "★".repeat(safeRating) + "☆".repeat(5 - safeRating);
 }
 
 const PlaceDetailView = () => {
@@ -48,26 +53,24 @@ const PlaceDetailView = () => {
 
   const [place, setPlace] = useState<Place | null>(state?.place ?? null);
   const [isPlaceLoading, setIsPlaceLoading] = useState(false);
-
   const [reviewSummary, setReviewSummary] = useState<PlaceReviewSummaryResponse | null>(null);
   const [reviews, setReviews] = useState<PlaceReviewResponse[]>([]);
   const [isReviewLoading, setIsReviewLoading] = useState(false);
-
   const [viewerImage, setViewerImage] = useState<ViewerImage | null>(null);
+  const [collections, setCollections] = useState<PlaceCollectionSummary[]>([]);
+  const [isSaveModalOpen, setIsSaveModalOpen] = useState(false);
+  const [isCollectionLoading, setIsCollectionLoading] = useState(false);
 
   const calledRef = useRef(false);
 
-  // 최근 방문 식당 저장 로직
-useEffect(() => {
-  if (token && place?.id && !calledRef.current) {
-    calledRef.current = true;
-
-    saveRecentPlaceApi({ placeId: place.id })
-      .catch(() => {
-        console.warn("최근 본 식당 저장 실패");
+  useEffect(() => {
+    if (token && place?.id && !calledRef.current) {
+      calledRef.current = true;
+      saveRecentPlaceApi({ placeId: place.id }).catch(() => {
+        console.warn("최근 방문 식당 저장 실패");
       });
-  }
-}, [place, token]);
+    }
+  }, [place, token]);
 
   useEffect(() => {
     if (!placeId) return;
@@ -86,7 +89,7 @@ useEffect(() => {
       }
     };
 
-    fetchPlaceDetail();
+    void fetchPlaceDetail();
   }, [placeId, state?.place]);
 
   useEffect(() => {
@@ -95,9 +98,7 @@ useEffect(() => {
     const fetchReviewData = async () => {
       try {
         setIsReviewLoading(true);
-
         const [summaryRes, reviewsRes] = await Promise.all([getPlaceReviewSummary(placeId), getPlaceReviews(placeId)]);
-
         setReviewSummary(summaryRes.data);
         setReviews(reviewsRes.data);
       } catch (error) {
@@ -107,7 +108,7 @@ useEffect(() => {
       }
     };
 
-    fetchReviewData();
+    void fetchReviewData();
   }, [placeId]);
 
   useEffect(() => {
@@ -121,7 +122,6 @@ useEffect(() => {
 
     const originalOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
-
     window.addEventListener("keydown", handleKeyDown);
 
     return () => {
@@ -129,6 +129,21 @@ useEffect(() => {
       window.removeEventListener("keydown", handleKeyDown);
     };
   }, [viewerImage]);
+
+  const fetchCollections = useCallback(async () => {
+    if (!place?.id) return;
+
+    try {
+      setIsCollectionLoading(true);
+      const { data } = await getMyPlaceCollections(place.id);
+      setCollections(data.items ?? []);
+    } catch (error) {
+      console.error("저장 리스트 조회 실패", error);
+      toast.error("저장 리스트를 불러오지 못했습니다.");
+    } finally {
+      setIsCollectionLoading(false);
+    }
+  }, [place?.id]);
 
   const openImageViewer = (src: string, alt: string) => {
     setViewerImage({ src, alt });
@@ -163,6 +178,18 @@ useEffect(() => {
         },
       },
     });
+  };
+
+  const openSaveModal = async () => {
+    if (!place) return;
+    if (!token) {
+      alert("로그인 후 이용가능합니다.");
+      navigate("/login");
+      return;
+    }
+
+    setIsSaveModalOpen(true);
+    await fetchCollections();
   };
 
   if (isPlaceLoading) {
@@ -260,7 +287,7 @@ useEffect(() => {
 
               <div>
                 <p className="text-sm text-gray-500">주소</p>
-                <p className="text-base text-gray-800 mt-1">{place.address || "정보 없음"}</p>
+                <p className="text-base text-gray-800 mt-1">{place.roadAddress || place.address || "정보 없음"}</p>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -270,7 +297,7 @@ useEffect(() => {
                 </div>
 
                 <div className="rounded-lg bg-gray-50 p-4">
-                  <p className="text-sm text-gray-500">평점</p>
+                  <p className="text-sm text-gray-500">별점</p>
                   <p className="text-base text-gray-800 mt-1">⭐ {reviewSummary ? reviewSummary.averageRating : "-"}</p>
                 </div>
 
@@ -280,7 +307,15 @@ useEffect(() => {
                 </div>
               </div>
 
-              <div className="flex justify-end">
+              <div className="flex flex-col sm:flex-row justify-end gap-3">
+                <button
+                  type="button"
+                  onClick={() => void openSaveModal()}
+                  className="px-5 py-2 rounded-lg border border-red-200 text-red-600 font-semibold hover:bg-red-50 transition"
+                >
+                  저장
+                </button>
+
                 <button
                   type="button"
                   onClick={goReviewWrite}
@@ -293,7 +328,7 @@ useEffect(() => {
               <div className="rounded-lg border border-gray-100 bg-red-50 p-4">
                 <p className="text-sm text-red-700 font-medium">찜 상태</p>
                 <p className="text-sm text-red-700 mt-1">
-                  {place.liked ? "현재 찜한 맛집입니다." : "찜하지 않은 맛집입니다."}
+                  {place.liked ? "현재 찜한 맛집입니다." : "아직 찜하지 않은 맛집입니다."}
                 </p>
               </div>
 
@@ -365,6 +400,17 @@ useEffect(() => {
           </div>
         </div>
       </div>
+
+      {isSaveModalOpen && (
+        <PlaceCollectionSaveModal
+          place={place}
+          collections={collections}
+          isOpen={isSaveModalOpen}
+          isLoading={isCollectionLoading}
+          onClose={() => setIsSaveModalOpen(false)}
+          onRefresh={fetchCollections}
+        />
+      )}
 
       {viewerImage && (
         <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4" onClick={closeImageViewer}>

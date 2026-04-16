@@ -286,8 +286,8 @@ const Header = () => {
     if (expiredHandledRef.current) return;
 
     expiredHandledRef.current = true;
-    logout();
-    toast.error("세션이 만료되어 로그아웃되었습니다.");
+    logout({ silent: true, reason: "expired" });
+    toast.error("세션이 만료되어 로그아웃되었어요.");
     navigate("/login");
   }, [leftSec, user, logout, navigate]);
 
@@ -440,7 +440,7 @@ const Header = () => {
                 <span className="text-indigo-700 text-sm font-semibold ml-2">{user.username} 님 환영합니다!</span>
                 <button
                   onClick={() => {
-                    logout();
+                    logout({ silent: true, reason: "manual" });
                     toast.success("로그아웃되었습니다.");
                     navigate("/");
                   }}
