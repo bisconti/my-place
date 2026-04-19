@@ -25,7 +25,12 @@ export interface Place {
   distanceM?: number;
   rating?: number;
   reviewCount?: number;
+  likeCount?: number;
   liked?: boolean;
+  thumbnail?: string;
+  featuredLiveInfoTv?: boolean;
+  featuredLifeMaster?: boolean;
+  featuredBaekbanTrip?: boolean;
 
   images?: PlaceImage[];
 }
@@ -45,4 +50,28 @@ export interface PlaceAutoCompleteItem {
   placeName: string;
   category: string;
   roadAddress: string;
+}
+
+export type PlaceSortOption = "distance" | "reviewCount" | "rating" | "likeCount";
+
+export interface PlaceListFilterState {
+  featuredLiveInfoTv: boolean;
+  featuredLifeMaster: boolean;
+  featuredBaekbanTrip: boolean;
+}
+
+export interface PlaceListMetadataRequest {
+  placeIds: string[];
+}
+
+export interface PlaceListMetadataItem {
+  placeId: string;
+  thumbnail?: string;
+  rating?: number;
+  reviewCount?: number;
+  likeCount?: number;
+  liked?: boolean;
+  featuredLiveInfoTv?: boolean;
+  featuredLifeMaster?: boolean;
+  featuredBaekbanTrip?: boolean;
 }

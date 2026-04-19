@@ -4,7 +4,12 @@
   - 식당 상세 조회
 */
 import { api } from "../api";
-import type { Place, PlaceAutoCompleteItem } from "../../types/place/place.types";
+import type {
+  Place,
+  PlaceAutoCompleteItem,
+  PlaceListMetadataItem,
+  PlaceListMetadataRequest,
+} from "../../types/place/place.types";
 
 export const getPlaceDetail = async (placeId: string): Promise<Place> => {
   const response = await api.get(`/api/places/${placeId}`);
@@ -17,5 +22,10 @@ export const getPlaceAutoCompleteList = async (keyword: string): Promise<PlaceAu
     params: { keyword },
   });
 
+  return response.data;
+};
+
+export const getPlaceListMetadata = async (payload: PlaceListMetadataRequest): Promise<PlaceListMetadataItem[]> => {
+  const response = await api.post<PlaceListMetadataItem[]>("/api/places/list-metadata", payload);
   return response.data;
 };

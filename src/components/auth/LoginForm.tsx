@@ -1,26 +1,25 @@
 /*
-  파일명: LoginForm.tsx
-  describe
-  - 로그인 component
+  file: LoginForm.tsx
+  description
+  - 로그인 입력, 유효성 검증, 인증 성공 후 전역 로그인 상태 반영을 담당하는 컴포넌트
 */
 import { yupResolver } from "@hookform/resolvers/yup";
 import axios from "axios";
 import { useMemo, useState } from "react";
 import { useForm, type SubmitHandler } from "react-hook-form";
 import { Link, useNavigate } from "react-router-dom";
-import BackButton from "../form/BackButton";
-import { LoginSchema, type LoginFormData } from "../../schemas/authSchema";
-import { useAuthStore } from "../../stores/authStore";
 import { signIn } from "../../api/user/auth.api";
+import { LoginSchema, type LoginFormData } from "../../schemas/authSchema";
+import { useAuth } from "../../hooks/useAuth";
+import BackButton from "../form/BackButton";
 
 const LoginForm = () => {
   const navigate = useNavigate();
-  // API 상태 관리
+  const { login } = useAuth();
+
   const [isSubmitting, setIsSubmitting] = useState(false);
-  // API 인증 오류 메시지 관리
   const [authError, setAuthError] = useState<string | null>(null);
 
-  // useForm 초기화, yupResolver 적용
   const {
     register,
     handleSubmit,
@@ -30,23 +29,15 @@ const LoginForm = () => {
     mode: "onSubmit",
   });
 
-  // 유효성 검증 통과 시 실행
   const onSubmit: SubmitHandler<LoginFormData> = async (data) => {
     setIsSubmitting(true);
     setAuthError(null);
 
     try {
-      const res = await signIn(data);
+      const response = await signIn(data);
+      const { user, token, refreshToken } = response.data;
 
-      const { user, token, refreshToken } = res.data;
-
-      // zustand + storage 동기화
-      useAuthStore.getState().setAuth({
-        user,
-        token,
-        refreshToken,
-      });
-
+      login(user, token, refreshToken);
       navigate("/");
     } catch (error) {
       console.error("로그인 실패", error);
@@ -55,25 +46,22 @@ const LoginForm = () => {
         const result = error.response.data as { message?: string };
         setAuthError(result.message || "로그인에 실패했습니다.");
       } else {
-        setAuthError("네트워크 연결 또는 서버에 문제가 있습니다.");
+        setAuthError("네트워크 연결 또는 서버 상태를 확인해주세요.");
       }
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  // error message control
-  const handleErrorMsg = useMemo(() => {
+  const validationError = useMemo(() => {
     const errorKeys = Object.keys(errors);
+    if (errorKeys.length === 0) return null;
 
-    if (errorKeys.length > 0) {
-      const errorKey = errorKeys[0] as keyof LoginFormData;
-      return errors[errorKey]?.message;
-    }
-    return null;
+    const firstErrorKey = errorKeys[0] as keyof LoginFormData;
+    return errors[firstErrorKey]?.message ?? null;
   }, [errors]);
 
-  const loginErrorMsg = handleErrorMsg || authError;
+  const loginErrorMessage = validationError || authError;
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-gray-50 p-4">
@@ -83,7 +71,7 @@ const LoginForm = () => {
           <h2 className="text-3xl font-bold text-center text-red-600">로그인</h2>
         </div>
 
-        <p className="text-center text-gray-500">맛집 탐방을 시작해 보세요.</p>
+        <p className="text-center text-gray-500">맛집 탐색을 시작해보세요</p>
 
         <form className="space-y-4" onSubmit={handleSubmit(onSubmit)} noValidate>
           <div className="flex items-center space-x-4">
@@ -119,10 +107,9 @@ const LoginForm = () => {
             />
           </div>
 
-          {/* 유효성 검증 오류 메시지 표시 */}
-          {loginErrorMsg && (
+          {loginErrorMessage && (
             <div className="pt-2">
-              <p className="text-xs text-red-500 text-center w-full">{loginErrorMsg}</p>
+              <p className="text-xs text-red-500 text-center w-full">{loginErrorMessage}</p>
             </div>
           )}
 

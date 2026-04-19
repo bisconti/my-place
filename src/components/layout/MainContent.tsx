@@ -1,16 +1,16 @@
-/*
+﻿/*
   file: MainContent.tsx
   description
-  - 메인 화면의 식당 목록과 지도 영역을 연결하는 컴포넌트
+  - 메인 화면에서 식당 목록과 지도를 연결하고 검색, 정렬, 필터를 관리하는 컴포넌트
 */
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import PlaceListPanel from "./PlaceListPanel";
-import MapPanel from "./MapPanel";
-import { useKakaoPlaceMap } from "../../hooks/useKakaoPlaceMap";
-import { useAuthStore } from "../../stores/authStore";
 import { getPlaceDetail } from "../../api/place/place.api";
 import { saveRecentPlaceApi } from "../../api/place/recentPlace.api";
+import { useKakaoPlaceMap } from "../../hooks/useKakaoPlaceMap";
+import { useAuthStore } from "../../stores/authStore";
+import MapPanel from "./MapPanel";
+import PlaceListPanel from "./PlaceListPanel";
 
 export default function MainContent() {
   const navigate = useNavigate();
@@ -27,6 +27,10 @@ export default function MainContent() {
     search,
     toggleLike,
     focusPlaceById,
+    sortBy,
+    setSortBy,
+    filters,
+    setFilters,
   } = useKakaoPlaceMap();
 
   const isLoggedIn = useAuthStore((s) => !!s.user);
@@ -37,8 +41,6 @@ export default function MainContent() {
   };
 
   const handleOpenPlaceDetail = async (id: string) => {
-    //  const place = places.find((p) => p.id === id);
-    //  if (!place) return;
     const place = await getPlaceDetail(id);
 
     if (token) {
@@ -59,9 +61,13 @@ export default function MainContent() {
           places={places}
           loading={loading}
           selectedId={selectedId}
+          sortBy={sortBy}
+          filters={filters}
           onSelect={handleSelectPlace}
           onOpenDetail={handleOpenPlaceDetail}
           onToggleLike={toggleLike}
+          onSortChange={setSortBy}
+          onFilterChange={setFilters}
           isLoggedIn={isLoggedIn}
         />
 
@@ -70,7 +76,7 @@ export default function MainContent() {
             <form
               onSubmit={(e) => {
                 e.preventDefault();
-                search(pendingKeyword);
+                void search(pendingKeyword);
               }}
               className="flex-1"
             >
@@ -82,7 +88,7 @@ export default function MainContent() {
               />
             </form>
 
-            <button onClick={goMyLocation} className="px-3 py-2 rounded-md border text-sm">
+            <button type="button" onClick={goMyLocation} className="px-3 py-2 rounded-md border text-sm">
               내 주변
             </button>
           </div>

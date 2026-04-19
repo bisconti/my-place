@@ -1,47 +1,25 @@
-﻿/*
+/*
   file: PlaceDetailView.tsx
   description
-  - 식당 상세 정보, 이미지, 리뷰와 저장 리스트 기능을 제공하는 컴포넌트
+  - 식당 상세 화면을 조합하고 상세 조회 훅과 서브 컴포넌트를 연결하는 컨테이너 컴포넌트
 */
-import { useCallback, useEffect, useRef, useState } from "react";
-import toast from "react-hot-toast";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
-import { getMyPlaceCollections } from "../../api/place/placeCollection.api";
-import { getPlaceDetail } from "../../api/place/place.api";
-import { getPlaceReviews, getPlaceReviewSummary } from "../../api/place/placeReview.api";
-import { saveRecentPlaceApi } from "../../api/place/recentPlace.api";
-import { useAuthStore } from "../../stores/authStore";
-import type { PlaceCollectionSummary } from "../../types/place/placeCollection.types";
-import type { Place } from "../../types/place/place.types";
-import type { PlaceReviewResponse, PlaceReviewSummaryResponse } from "../../types/place/placeReview.types";
 import BackButton from "../form/BackButton";
+import ImageViewerModal from "../share/ImageViewerModal";
+import { usePlaceDetailData } from "../../hooks/usePlaceDetailData";
+import type { Place } from "../../types/place/place.types";
 import PlaceCollectionSaveModal from "./PlaceCollectionSaveModal";
+import PlaceImageGallery from "./PlaceImageGallery";
+import PlaceReviewSection from "./PlaceReviewSection";
 
 type LocationState = {
   place?: Place;
 };
 
-type ViewerImage = {
-  src: string;
-  alt: string;
-};
-
-function formatDistance(m?: number) {
-  if (m == null) return "정보 없음";
-  if (m < 1000) return `${m}m`;
-  return `${(m / 1000).toFixed(1)}km`;
-}
-
-function formatDate(dateString?: string) {
-  if (!dateString) return "";
-  const date = new Date(dateString);
-  if (Number.isNaN(date.getTime())) return "";
-  return date.toLocaleDateString("ko-KR");
-}
-
-function renderStars(rating: number) {
-  const safeRating = Math.max(0, Math.min(5, Math.round(rating)));
-  return "★".repeat(safeRating) + "☆".repeat(5 - safeRating);
+function formatDistance(distance?: number) {
+  if (distance == null) return "정보 없음";
+  if (distance < 1000) return `${distance}m`;
+  return `${(distance / 1000).toFixed(1)}km`;
 }
 
 const PlaceDetailView = () => {
@@ -49,117 +27,36 @@ const PlaceDetailView = () => {
   const { placeId } = useParams();
   const location = useLocation();
   const state = location.state as LocationState | null;
-  const token = useAuthStore((s) => s.token);
 
-  const [place, setPlace] = useState<Place | null>(state?.place ?? null);
-  const [isPlaceLoading, setIsPlaceLoading] = useState(false);
-  const [reviewSummary, setReviewSummary] = useState<PlaceReviewSummaryResponse | null>(null);
-  const [reviews, setReviews] = useState<PlaceReviewResponse[]>([]);
-  const [isReviewLoading, setIsReviewLoading] = useState(false);
-  const [viewerImage, setViewerImage] = useState<ViewerImage | null>(null);
-  const [collections, setCollections] = useState<PlaceCollectionSummary[]>([]);
-  const [isSaveModalOpen, setIsSaveModalOpen] = useState(false);
-  const [isCollectionLoading, setIsCollectionLoading] = useState(false);
+  const {
+    token,
+    place,
+    isPlaceLoading,
+    reviewSummary,
+    reviews,
+    isReviewLoading,
+    viewerImage,
+    collections,
+    isCollectionLoading,
+    isSaveModalOpen,
+    setIsSaveModalOpen,
+    openSaveModal,
+    fetchCollections,
+    openImageViewer,
+    closeImageViewer,
+  } = usePlaceDetailData(placeId, state?.place ?? null);
 
-  const calledRef = useRef(false);
+  const moveToLoginIfNeeded = () => {
+    if (token) return false;
 
-  useEffect(() => {
-    if (token && place?.id && !calledRef.current) {
-      calledRef.current = true;
-      saveRecentPlaceApi({ placeId: place.id }).catch(() => {
-        console.warn("최근 방문 식당 저장 실패");
-      });
-    }
-  }, [place, token]);
-
-  useEffect(() => {
-    if (!placeId) return;
-    if (state?.place) return;
-
-    const fetchPlaceDetail = async () => {
-      try {
-        setIsPlaceLoading(true);
-        const data = await getPlaceDetail(placeId);
-        setPlace(data);
-      } catch (error) {
-        console.error("식당 상세 조회 실패:", error);
-        setPlace(null);
-      } finally {
-        setIsPlaceLoading(false);
-      }
-    };
-
-    void fetchPlaceDetail();
-  }, [placeId, state?.place]);
-
-  useEffect(() => {
-    if (!placeId) return;
-
-    const fetchReviewData = async () => {
-      try {
-        setIsReviewLoading(true);
-        const [summaryRes, reviewsRes] = await Promise.all([getPlaceReviewSummary(placeId), getPlaceReviews(placeId)]);
-        setReviewSummary(summaryRes.data);
-        setReviews(reviewsRes.data);
-      } catch (error) {
-        console.error("리뷰 데이터 조회 실패:", error);
-      } finally {
-        setIsReviewLoading(false);
-      }
-    };
-
-    void fetchReviewData();
-  }, [placeId]);
-
-  useEffect(() => {
-    if (!viewerImage) return;
-
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        setViewerImage(null);
-      }
-    };
-
-    const originalOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    window.addEventListener("keydown", handleKeyDown);
-
-    return () => {
-      document.body.style.overflow = originalOverflow;
-      window.removeEventListener("keydown", handleKeyDown);
-    };
-  }, [viewerImage]);
-
-  const fetchCollections = useCallback(async () => {
-    if (!place?.id) return;
-
-    try {
-      setIsCollectionLoading(true);
-      const { data } = await getMyPlaceCollections(place.id);
-      setCollections(data.items ?? []);
-    } catch (error) {
-      console.error("저장 리스트 조회 실패", error);
-      toast.error("저장 리스트를 불러오지 못했습니다.");
-    } finally {
-      setIsCollectionLoading(false);
-    }
-  }, [place?.id]);
-
-  const openImageViewer = (src: string, alt: string) => {
-    setViewerImage({ src, alt });
+    alert("로그인 후 이용가능합니다.");
+    navigate("/login");
+    return true;
   };
 
-  const closeImageViewer = () => {
-    setViewerImage(null);
-  };
-
-  const goReviewWrite = () => {
-    if (!place) return;
-    if (!token) {
-      alert("로그인 후 이용가능합니다.");
-      navigate("/login");
-      return;
-    }
+  const handleReviewWrite = () => {
+    if (!place || !placeId) return;
+    if (moveToLoginIfNeeded()) return;
 
     navigate(`/places/${placeId}/reviews/write`, {
       state: {
@@ -180,16 +77,11 @@ const PlaceDetailView = () => {
     });
   };
 
-  const openSaveModal = async () => {
+  const handleOpenSaveModal = async () => {
     if (!place) return;
-    if (!token) {
-      alert("로그인 후 이용가능합니다.");
-      navigate("/login");
-      return;
-    }
+    if (moveToLoginIfNeeded()) return;
 
-    setIsSaveModalOpen(true);
-    await fetchCollections();
+    await openSaveModal();
   };
 
   if (isPlaceLoading) {
@@ -243,36 +135,12 @@ const PlaceDetailView = () => {
             <div className="space-y-6">
               <div>
                 <p className="text-sm text-gray-500 mb-3">가게 이미지</p>
-
-                {place.images && place.images.length > 0 ? (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    {place.images
-                      .slice()
-                      .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0))
-                      .map((image) => {
-                        const imageUrl = `${import.meta.env.VITE_IMAGE_BASE_URL}${image.filePath}`;
-
-                        return (
-                          <div
-                            key={image.id}
-                            className="overflow-hidden rounded-xl border border-gray-200 bg-gray-50 cursor-zoom-in"
-                            onClick={() => openImageViewer(imageUrl, image.originalFileName || `${place.name} 이미지`)}
-                          >
-                            <img
-                              src={imageUrl}
-                              alt={image.originalFileName || `${place.name} 이미지`}
-                              className="w-full h-56 object-cover"
-                              loading="lazy"
-                            />
-                          </div>
-                        );
-                      })}
-                  </div>
-                ) : (
-                  <div className="rounded-lg bg-gray-50 border border-gray-200 p-6 text-center text-sm text-gray-400">
-                    등록된 가게 이미지가 없습니다.
-                  </div>
-                )}
+                <PlaceImageGallery
+                  images={place.images ?? []}
+                  emptyMessage="등록된 가게 이미지가 없습니다."
+                  altPrefix={place.name}
+                  onSelectImage={openImageViewer}
+                />
               </div>
 
               <div>
@@ -310,7 +178,7 @@ const PlaceDetailView = () => {
               <div className="flex flex-col sm:flex-row justify-end gap-3">
                 <button
                   type="button"
-                  onClick={() => void openSaveModal()}
+                  onClick={() => void handleOpenSaveModal()}
                   className="px-5 py-2 rounded-lg border border-red-200 text-red-600 font-semibold hover:bg-red-50 transition"
                 >
                   저장
@@ -318,7 +186,7 @@ const PlaceDetailView = () => {
 
                 <button
                   type="button"
-                  onClick={goReviewWrite}
+                  onClick={handleReviewWrite}
                   className="px-5 py-2 rounded-lg bg-red-600 text-white font-semibold hover:bg-red-700 transition"
                 >
                   리뷰 작성하기
@@ -344,60 +212,7 @@ const PlaceDetailView = () => {
             </div>
           </div>
 
-          <div className="bg-white rounded-xl shadow-md p-8">
-            <div className="mb-6">
-              <h2 className="text-xl font-bold text-gray-900">리뷰</h2>
-              <p className="text-sm text-gray-500 mt-1">다른 사용자가 작성한 리뷰와 사진을 확인해보세요.</p>
-            </div>
-
-            {isReviewLoading ? (
-              <p className="text-gray-500">리뷰를 불러오는 중입니다...</p>
-            ) : reviews.length === 0 ? (
-              <div className="rounded-lg bg-gray-50 p-6 text-center text-gray-500">아직 등록된 리뷰가 없습니다.</div>
-            ) : (
-              <div className="space-y-6">
-                {reviews.map((review) => (
-                  <div key={review.id} className="border rounded-xl p-5">
-                    <div className="flex items-start justify-between gap-4">
-                      <div>
-                        <p className="font-semibold text-gray-900">{review.nickname}</p>
-                        <p className="text-sm text-yellow-500 mt-1">{renderStars(review.rating)}</p>
-                      </div>
-                      <p className="text-sm text-gray-400">{formatDate(review.createdAt)}</p>
-                    </div>
-
-                    <p className="text-gray-800 mt-4 whitespace-pre-wrap">{review.content}</p>
-
-                    {review.images && review.images.length > 0 && (
-                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mt-4">
-                        {review.images
-                          .slice()
-                          .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0))
-                          .map((image) => {
-                            const imageUrl = `${import.meta.env.VITE_IMAGE_BASE_URL}${image.filePath}`;
-
-                            return (
-                              <div
-                                key={image.id}
-                                className="overflow-hidden rounded-lg border bg-gray-50 cursor-zoom-in"
-                                onClick={() => openImageViewer(imageUrl, image.originalFileName || "리뷰 이미지")}
-                              >
-                                <img
-                                  src={imageUrl}
-                                  alt={image.originalFileName || "리뷰 이미지"}
-                                  className="w-full h-32 object-cover"
-                                  loading="lazy"
-                                />
-                              </div>
-                            );
-                          })}
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
+          <PlaceReviewSection reviews={reviews} isLoading={isReviewLoading} onSelectImage={openImageViewer} />
         </div>
       </div>
 
@@ -412,28 +227,7 @@ const PlaceDetailView = () => {
         />
       )}
 
-      {viewerImage && (
-        <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4" onClick={closeImageViewer}>
-          <div
-            className="relative max-w-5xl max-h-[90vh] w-full flex items-center justify-center"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <button
-              type="button"
-              onClick={closeImageViewer}
-              className="absolute top-2 right-2 z-10 rounded-full bg-black/60 px-3 py-1 text-sm text-white hover:bg-black/80"
-            >
-              닫기
-            </button>
-
-            <img
-              src={viewerImage.src}
-              alt={viewerImage.alt}
-              className="max-w-full max-h-[90vh] object-contain rounded-lg shadow-2xl"
-            />
-          </div>
-        </div>
-      )}
+      {viewerImage && <ImageViewerModal src={viewerImage.src} alt={viewerImage.alt} onClose={closeImageViewer} />}
     </>
   );
 };
