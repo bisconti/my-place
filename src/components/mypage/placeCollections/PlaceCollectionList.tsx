@@ -1,43 +1,23 @@
 /*
-  파일명 PlaceCollectionList.tsx
-  기능
-  - 마이페이지에서 내 저장 리스트를 조회하고 새 리스트를 생성하는 컴포넌트
+  file: PlaceCollectionList.tsx
+  description
+  - 마이페이지에서 저장 리스트 목록을 조회하고 새 리스트를 생성하는 컴포넌트
 */
-import { useCallback, useEffect, useState } from "react";
+import { useState } from "react";
 import { Navigate, useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
-import { createPlaceCollection, getMyPlaceCollections } from "../../../api/place/placeCollection.api";
-import BackButton from "../../form/BackButton";
+import { useCreatePlaceCollectionMutation, usePlaceCollectionsQuery } from "../../../features/mypage/queries/useMyPageQueries";
 import { useAuth } from "../../../hooks/useAuth";
-import type { PlaceCollectionSummary } from "../../../types/place/placeCollection.types";
 import { formatDateTime } from "../../../utils/common";
+import BackButton from "../../form/BackButton";
 
 const PlaceCollectionList = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
 
-  const [collections, setCollections] = useState<PlaceCollectionSummary[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isCreating, setIsCreating] = useState(false);
+  const collectionsQuery = usePlaceCollectionsQuery();
+  const createCollectionMutation = useCreatePlaceCollectionMutation();
   const [newCollectionName, setNewCollectionName] = useState("");
-
-  const fetchCollections = useCallback(async () => {
-    try {
-      setIsLoading(true);
-      const { data } = await getMyPlaceCollections();
-      setCollections(data.items ?? []);
-    } catch (error) {
-      console.error("저장 리스트 조회 실패", error);
-      toast.error("저장 리스트를 불러오지 못했습니다.");
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    if (!user) return;
-    void fetchCollections();
-  }, [user, fetchCollections]);
 
   const handleCreateCollection = async () => {
     const trimmedName = newCollectionName.trim();
@@ -48,22 +28,20 @@ const PlaceCollectionList = () => {
     }
 
     try {
-      setIsCreating(true);
-      await createPlaceCollection({ name: trimmedName });
+      await createCollectionMutation.mutateAsync({ name: trimmedName });
       setNewCollectionName("");
       toast.success("저장 리스트를 만들었어요.");
-      await fetchCollections();
     } catch (error) {
       console.error("저장 리스트 생성 실패", error);
       toast.error("저장 리스트 생성에 실패했습니다.");
-    } finally {
-      setIsCreating(false);
     }
   };
 
   if (!user) {
     return <Navigate to="/login" replace />;
   }
+
+  const collections = collectionsQuery.data ?? [];
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -79,29 +57,33 @@ const PlaceCollectionList = () => {
             <input
               type="text"
               value={newCollectionName}
-              onChange={(e) => setNewCollectionName(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
+              onChange={(event) => setNewCollectionName(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === "Enter") {
                   void handleCreateCollection();
                 }
               }}
-              placeholder="예: 치킨, 혼밥, 부모님 모시고 갈 곳"
+              placeholder="예: 데이트, 혼밥, 부모님 모시고 갈 곳"
               className="flex-1 rounded-lg border border-gray-300 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
             />
 
             <button
               type="button"
               onClick={() => void handleCreateCollection()}
-              disabled={isCreating}
+              disabled={createCollectionMutation.isPending}
               className="px-5 py-3 rounded-lg bg-red-600 text-white text-sm font-semibold hover:bg-red-700 disabled:bg-gray-300"
             >
-              {isCreating ? "생성 중..." : "새 리스트 만들기"}
+              {createCollectionMutation.isPending ? "생성 중..." : "새 리스트 만들기"}
             </button>
           </div>
         </div>
 
-        {isLoading ? (
+        {collectionsQuery.isLoading ? (
           <div className="bg-white rounded-xl shadow-md p-8 text-center text-gray-500">저장 리스트를 불러오는 중입니다...</div>
+        ) : collectionsQuery.isError ? (
+          <div className="bg-white rounded-xl shadow-md p-8 text-center text-red-500">
+            저장 리스트를 불러오지 못했습니다.
+          </div>
         ) : collections.length === 0 ? (
           <div className="bg-white rounded-xl shadow-md p-8 text-center">
             <p className="text-gray-700 font-medium">아직 만든 저장 리스트가 없어요.</p>
@@ -119,7 +101,7 @@ const PlaceCollectionList = () => {
                 <div className="flex items-start justify-between gap-3">
                   <div>
                     <h2 className="text-lg font-bold text-gray-900">{collection.name}</h2>
-                    <p className="text-sm text-gray-500 mt-2">저장된 식당 {collection.placeCount}곳</p>
+                    <p className="text-sm text-gray-500 mt-2">저장한 식당 {collection.placeCount}곳</p>
                   </div>
 
                   <span className="inline-flex items-center rounded-full bg-red-50 border border-red-100 px-3 py-1 text-xs font-semibold text-red-600">

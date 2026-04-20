@@ -1,72 +1,39 @@
-﻿/*
-  파일명 MyPage.tsx
-  기능
-  - 마이페이지의 프로필, 통계, 메뉴, 최근 방문 영역을 구성
+/*
+  file: MyPage.tsx
+  description
+  - 마이페이지의 프로필, 통계, 메뉴, 최근 방문 영역을 조합하는 페이지 컴포넌트
 */
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { Navigate, useNavigate } from "react-router-dom";
-import { getMyPlaceLikeCount } from "../../api/place/placeLike.api";
-import { getRecentPlacesApi } from "../../api/place/recentPlace.api";
-import { getMyReviewCount } from "../../api/place/placeReview.api";
 import BackButton from "../../components/form/BackButton";
 import MyPageMenu from "../../components/mypage/MyPageMenu";
 import MyPageProfileCard from "../../components/mypage/MyPageProfileCard";
 import MyPageRecentActivities from "../../components/mypage/MyPageRecentActivities";
 import MyPageStats from "../../components/mypage/MyPageStats";
 import RecentPlace from "../../components/mypage/RecentPlace";
+import { useMyPageStatsQuery } from "../../features/mypage/queries/useMyPageQueries";
 import { useAuth } from "../../hooks/useAuth";
 
 const MyPage = () => {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
 
-  const [likeCount, setLikeCount] = useState(0);
-  const [reviewCount, setReviewCount] = useState(0);
-  const [recentPlaceCount, setRecentPlaceCount] = useState(0);
   const [isRecentPlaceVisible, setIsRecentPlaceVisible] = useState(false);
 
-  useEffect(() => {
-    if (!user?.useremail) return;
-
-    const fetchMyPageCounts = async () => {
-      try {
-        const [likeResult, reviewResult, recentResult] = await Promise.allSettled([
-          getMyPlaceLikeCount(),
-          getMyReviewCount(user.useremail),
-          getRecentPlacesApi(),
-        ]);
-
-        if (likeResult.status === "fulfilled") {
-          setLikeCount(likeResult.value.data);
-        }
-
-        if (reviewResult.status === "fulfilled") {
-          setReviewCount(reviewResult.value.data);
-        }
-
-        if (recentResult.status === "fulfilled") {
-          setRecentPlaceCount(recentResult.value.length);
-        }
-      } catch (error) {
-        console.error("마이페이지 통계 조회 실패", error);
-      }
-    };
-
-    void fetchMyPageCounts();
-  }, [user?.useremail]);
+  const statsQuery = useMyPageStatsQuery(user?.useremail);
 
   const stats = useMemo(
     () => [
-      { label: "내 리뷰", value: reviewCount, desc: "작성한 리뷰 수" },
-      { label: "찜한 맛집", value: likeCount, desc: "좋아요한 식당 수" },
+      { label: "내 리뷰", value: statsQuery.data?.reviewCount ?? 0, desc: "작성한 리뷰 수" },
+      { label: "찜한 맛집", value: statsQuery.data?.likeCount ?? 0, desc: "좋아요한 식당 수" },
       {
         label: "최근 방문",
-        value: recentPlaceCount,
+        value: statsQuery.data?.recentPlaceCount ?? 0,
         desc: "최근 방문 기록",
         onClick: () => setIsRecentPlaceVisible((prev) => !prev),
       },
     ],
-    [likeCount, recentPlaceCount, reviewCount]
+    [statsQuery.data?.likeCount, statsQuery.data?.recentPlaceCount, statsQuery.data?.reviewCount]
   );
 
   const recentActivities = useMemo(
@@ -98,7 +65,7 @@ const MyPage = () => {
 
         <MyPageProfileCard user={user} onEditProfile={() => navigate("/mypage/profile")} onLogout={handleLogout} />
 
-        <MyPageStats stats={stats} />
+        <MyPageStats stats={stats} isLoading={statsQuery.isLoading} />
 
         {isRecentPlaceVisible && <RecentPlace />}
 

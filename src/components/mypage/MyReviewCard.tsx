@@ -1,9 +1,8 @@
 /*
-  파일명: MyReviewCard.tsx
-  기능
-  - 내 리뷰 목록 카드 component
+  file: MyReviewCard.tsx
+  description
+  - 내가 작성한 리뷰 한 건을 카드 형태로 보여주는 컴포넌트
 */
-
 import type { PlaceReviewResponse } from "../../types/place/placeReview.types";
 
 type MyReviewCardProps = {
@@ -12,7 +11,7 @@ type MyReviewCardProps = {
 };
 
 const renderStars = (rating: number) => {
-  return "⭐".repeat(rating);
+  return "★".repeat(rating);
 };
 
 const formatDate = (dateString: string) => {
@@ -21,13 +20,12 @@ const formatDate = (dateString: string) => {
 };
 
 const MyReviewCard = ({ review, onDelete }: MyReviewCardProps) => {
-  console.log(review);
   return (
     <div className="bg-white rounded-xl shadow-sm border p-5">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h3 className="text-base font-bold text-gray-900">식당명: {review.placeName}</h3>
-          <p className="text-sm text-gray-500 mt-1">작성일: {formatDate(review.createdAt)}</p>
+          <h3 className="text-base font-bold text-gray-900">식당명 {review.placeName}</h3>
+          <p className="text-sm text-gray-500 mt-1">작성일 {formatDate(review.createdAt)}</p>
         </div>
 
         <div className="text-sm font-semibold text-yellow-500">{renderStars(review.rating)}</div>
@@ -51,6 +49,7 @@ const MyReviewCard = ({ review, onDelete }: MyReviewCardProps) => {
       {onDelete && (
         <div className="mt-4 flex justify-end">
           <button
+            type="button"
             onClick={() => onDelete(review.id)}
             className="px-4 py-2 text-sm font-medium rounded-lg text-red-600 border border-red-200 hover:bg-red-50 transition"
           >

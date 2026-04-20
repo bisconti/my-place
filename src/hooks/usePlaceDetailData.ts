@@ -1,18 +1,16 @@
 /*
   file: usePlaceDetailData.ts
   description
-  - 식당 상세 페이지의 조회, 최근 방문 저장, 저장 리스트 조회, 이미지 뷰어 상태를 관리하는 훅
+  - 식당 상세 페이지에서 React Query 기반 조회와 모달 UI 상태를 함께 관리하는 훅
 */
 import { useCallback, useEffect, useRef, useState } from "react";
 import toast from "react-hot-toast";
 import { getMyPlaceCollections } from "../api/place/placeCollection.api";
-import { getPlaceDetail } from "../api/place/place.api";
-import { getPlaceReviews, getPlaceReviewSummary } from "../api/place/placeReview.api";
 import { saveRecentPlaceApi } from "../api/place/recentPlace.api";
+import { usePlaceDetailQuery, usePlaceReviewsQuery, usePlaceReviewSummaryQuery } from "../features/place/queries/usePlaceQueries";
 import { useAuthStore } from "../stores/authStore";
 import type { PlaceCollectionSummary } from "../types/place/placeCollection.types";
 import type { Place } from "../types/place/place.types";
-import type { PlaceReviewResponse, PlaceReviewSummaryResponse } from "../types/place/placeReview.types";
 
 type ViewerImage = {
   src: string;
@@ -22,11 +20,10 @@ type ViewerImage = {
 export function usePlaceDetailData(placeId?: string, initialPlace?: Place | null) {
   const token = useAuthStore((state) => state.token);
 
-  const [place, setPlace] = useState<Place | null>(initialPlace ?? null);
-  const [isPlaceLoading, setIsPlaceLoading] = useState(!initialPlace && !!placeId);
-  const [reviewSummary, setReviewSummary] = useState<PlaceReviewSummaryResponse | null>(null);
-  const [reviews, setReviews] = useState<PlaceReviewResponse[]>([]);
-  const [isReviewLoading, setIsReviewLoading] = useState(false);
+  const placeQuery = usePlaceDetailQuery(placeId, initialPlace);
+  const reviewSummaryQuery = usePlaceReviewSummaryQuery(placeId);
+  const reviewsQuery = usePlaceReviewsQuery(placeId);
+
   const [viewerImage, setViewerImage] = useState<ViewerImage | null>(null);
   const [collections, setCollections] = useState<PlaceCollectionSummary[]>([]);
   const [isCollectionLoading, setIsCollectionLoading] = useState(false);
@@ -35,51 +32,13 @@ export function usePlaceDetailData(placeId?: string, initialPlace?: Place | null
   const recentPlaceSavedRef = useRef(false);
 
   useEffect(() => {
-    if (!placeId || initialPlace) return;
-
-    const fetchPlaceDetail = async () => {
-      try {
-        setIsPlaceLoading(true);
-        const data = await getPlaceDetail(placeId);
-        setPlace(data);
-      } catch (error) {
-        console.error("식당 상세 조회 실패", error);
-        setPlace(null);
-      } finally {
-        setIsPlaceLoading(false);
-      }
-    };
-
-    void fetchPlaceDetail();
-  }, [initialPlace, placeId]);
-
-  useEffect(() => {
-    if (!placeId) return;
-
-    const fetchReviewData = async () => {
-      try {
-        setIsReviewLoading(true);
-        const [summaryRes, reviewsRes] = await Promise.all([getPlaceReviewSummary(placeId), getPlaceReviews(placeId)]);
-        setReviewSummary(summaryRes.data);
-        setReviews(reviewsRes.data);
-      } catch (error) {
-        console.error("리뷰 데이터 조회 실패", error);
-      } finally {
-        setIsReviewLoading(false);
-      }
-    };
-
-    void fetchReviewData();
-  }, [placeId]);
-
-  useEffect(() => {
-    if (!token || !place?.id || recentPlaceSavedRef.current) return;
+    if (!token || !placeQuery.data?.id || recentPlaceSavedRef.current) return;
 
     recentPlaceSavedRef.current = true;
-    saveRecentPlaceApi({ placeId: place.id }).catch(() => {
+    saveRecentPlaceApi({ placeId: placeQuery.data.id }).catch(() => {
       console.warn("최근 방문 식당 저장 실패");
     });
-  }, [place, token]);
+  }, [placeQuery.data?.id, token]);
 
   useEffect(() => {
     if (!viewerImage) return;
@@ -101,19 +60,19 @@ export function usePlaceDetailData(placeId?: string, initialPlace?: Place | null
   }, [viewerImage]);
 
   const fetchCollections = useCallback(async () => {
-    if (!place?.id) return;
+    if (!placeQuery.data?.id) return;
 
     try {
       setIsCollectionLoading(true);
-      const { data } = await getMyPlaceCollections(place.id);
-      setCollections(data.items ?? []);
+      const response = await getMyPlaceCollections(placeQuery.data.id);
+      setCollections(response.data.items ?? []);
     } catch (error) {
       console.error("저장 리스트 조회 실패", error);
       toast.error("저장 리스트를 불러오지 못했습니다.");
     } finally {
       setIsCollectionLoading(false);
     }
-  }, [place?.id]);
+  }, [placeQuery.data?.id]);
 
   const openSaveModal = useCallback(async () => {
     setIsSaveModalOpen(true);
@@ -122,11 +81,11 @@ export function usePlaceDetailData(placeId?: string, initialPlace?: Place | null
 
   return {
     token,
-    place,
-    isPlaceLoading,
-    reviewSummary,
-    reviews,
-    isReviewLoading,
+    place: placeQuery.data ?? null,
+    isPlaceLoading: placeQuery.isLoading,
+    reviewSummary: reviewSummaryQuery.data ?? null,
+    reviews: reviewsQuery.data ?? [],
+    isReviewLoading: reviewSummaryQuery.isLoading || reviewsQuery.isLoading,
     viewerImage,
     collections,
     isCollectionLoading,

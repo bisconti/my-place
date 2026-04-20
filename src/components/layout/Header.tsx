@@ -6,13 +6,13 @@
 import { useEffect } from "react";
 import toast from "react-hot-toast";
 import { useLocation, useNavigate } from "react-router-dom";
-import HeaderAuthSection from "./header/HeaderAuthSection";
-import HeaderNotificationMenu from "./header/HeaderNotificationMenu";
-import HeaderSearchBar from "./header/HeaderSearchBar";
 import { useHeaderNotifications } from "../../hooks/useHeaderNotifications";
 import { useHeaderPlaceSearch } from "../../hooks/useHeaderPlaceSearch";
 import { useSessionCountdown } from "../../hooks/useSessionCountdown";
 import { useAuthStore } from "../../stores/authStore";
+import HeaderAuthSection from "./header/HeaderAuthSection";
+import HeaderNotificationMenu from "./header/HeaderNotificationMenu";
+import HeaderSearchBar from "./header/HeaderSearchBar";
 
 const Header = () => {
   const navigate = useNavigate();

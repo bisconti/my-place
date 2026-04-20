@@ -49,6 +49,7 @@ const HeaderSearchBar = ({
           placeholder="식당, 메뉴, 지역을 검색해보세요"
           className="w-full py-2 pl-4 pr-10 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
         />
+
         <button
           type="button"
           onClick={() => void onSubmit()}

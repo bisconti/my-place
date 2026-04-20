@@ -3,8 +3,8 @@
   description
   - 식당 상세 페이지 하단의 리뷰 목록, 빈 상태, 이미지 표시를 담당하는 컴포넌트
 */
-import PlaceImageGallery from "./PlaceImageGallery";
 import type { PlaceReviewResponse } from "../../types/place/placeReview.types";
+import PlaceImageGallery from "./PlaceImageGallery";
 
 type PlaceReviewSectionProps = {
   reviews: PlaceReviewResponse[];

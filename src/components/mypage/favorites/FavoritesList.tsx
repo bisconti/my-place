@@ -1,50 +1,26 @@
 /*
-  파일명: FavoritesList.tsx
-  describe
-  - 마이페이지 내 찜한 맛집 목록 component
-  - 전체선택 / 개별선택 / 선택삭제 기능 제공
+  file: FavoritesList.tsx
+  description
+  - 마이페이지의 찜한 맛집 목록 조회와 선택 삭제를 관리하는 컴포넌트
 */
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { Navigate, useNavigate } from "react-router-dom";
-import { useAuth } from "../../../hooks/useAuth";
-import type { PlaceLikeResponse } from "../../../types/place/placeLike.types";
-import { getMyPlaceLikes, togglePlaceLikeByPayload } from "../../../api/place/placeLike.api";
 import BackButton from "../../form/BackButton";
+import { useDeleteFavoritePlacesMutation, useFavoritePlacesQuery } from "../../../features/mypage/queries/useMyPageQueries";
+import { useAuth } from "../../../hooks/useAuth";
 import { formatDateTime } from "../../../utils/common";
 
 const FavoritesList = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
 
-  const [isLoading, setIsLoading] = useState(true);
-  const [isDeleting, setIsDeleting] = useState(false);
-  const [apiError, setApiError] = useState<string | null>(null);
-  const [favorites, setFavorites] = useState<PlaceLikeResponse[]>([]);
+  const favoritesQuery = useFavoritePlacesQuery();
+  const deleteFavoritesMutation = useDeleteFavoritePlacesMutation();
+
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
 
-  const fetchFavorites = useCallback(async () => {
-    setIsLoading(true);
-    setApiError(null);
-
-    try {
-      const { data } = await getMyPlaceLikes();
-      setFavorites(data.items ?? []);
-      setSelectedIds([]);
-    } catch (error) {
-      console.error("찜 목록 조회 실패", error);
-      setApiError("찜한 맛집 목록을 불러오지 못했습니다. 잠시 후 다시 시도해주세요.");
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    if (!user) return;
-    fetchFavorites();
-  }, [user, fetchFavorites]);
-
+  const favorites = favoritesQuery.data ?? [];
   const allIds = useMemo(() => favorites.map((item) => item.placeId), [favorites]);
-
   const isAllChecked = favorites.length > 0 && selectedIds.length === favorites.length;
 
   const handleToggleAll = () => {
@@ -52,6 +28,7 @@ const FavoritesList = () => {
       setSelectedIds([]);
       return;
     }
+
     setSelectedIds(allIds);
   };
 
@@ -61,37 +38,21 @@ const FavoritesList = () => {
 
   const handleDeleteSelected = async () => {
     if (selectedIds.length === 0) {
-      alert("삭제할 목록을 선택해 주세요.");
+      alert("삭제할 목록을 선택해주세요.");
       return;
     }
 
-    const ok = window.confirm("선택한 찜 목록을 삭제하시겠습니까?");
-    if (!ok) return;
+    const shouldDelete = window.confirm("선택한 찜 목록을 삭제하시겠습니까?");
+    if (!shouldDelete) return;
 
     try {
-      setIsDeleting(true);
-
       const targets = favorites.filter((item) => selectedIds.includes(item.placeId));
-
-      await Promise.all(
-        targets.map((item) =>
-          togglePlaceLikeByPayload({
-            placeId: item.placeId,
-            placeName: item.placeName,
-            address: item.address,
-            category: item.category,
-            liked: false,
-          })
-        )
-      );
-
-      await fetchFavorites();
-      alert("선택한 찜 목록이 삭제되었습니다.");
+      await deleteFavoritesMutation.mutateAsync(targets);
+      setSelectedIds([]);
+      alert("선택한 찜 목록을 삭제했습니다.");
     } catch (error) {
       console.error("찜 선택 삭제 실패", error);
       alert("선택 삭제에 실패했습니다. 잠시 후 다시 시도해주세요.");
-    } finally {
-      setIsDeleting(false);
     }
   };
 
@@ -105,16 +66,16 @@ const FavoritesList = () => {
         <div className="relative mb-6">
           <BackButton path="/mypage" />
           <h1 className="text-2xl sm:text-3xl font-bold text-center text-red-600">찜한 맛집</h1>
-          <p className="text-center text-gray-500 mt-2">내가 저장한 맛집 목록을 확인할 수 있어요.</p>
+          <p className="text-center text-gray-500 mt-2">내가 좋아요한 맛집 목록을 확인할 수 있어요.</p>
         </div>
 
-        {isLoading ? (
+        {favoritesQuery.isLoading ? (
           <div className="bg-white rounded-xl shadow-md p-8 text-center text-gray-500">
             찜한 맛집 목록을 불러오는 중입니다...
           </div>
-        ) : apiError ? (
+        ) : favoritesQuery.isError ? (
           <div className="bg-white rounded-xl shadow-md p-8 text-center">
-            <p className="text-sm text-red-500">{apiError}</p>
+            <p className="text-sm text-red-500">찜한 맛집 목록을 불러오지 못했습니다. 잠시 후 다시 시도해주세요.</p>
           </div>
         ) : favorites.length === 0 ? (
           <div className="bg-white rounded-xl shadow-md p-8 text-center">
@@ -131,17 +92,16 @@ const FavoritesList = () => {
           </div>
         ) : (
           <>
-            {/* 상단 툴바 */}
             <div className="bg-white rounded-xl shadow-md p-4 mb-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
               <label className="inline-flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
                 <input
                   type="checkbox"
                   checked={isAllChecked}
                   onChange={handleToggleAll}
-                  disabled={isDeleting}
+                  disabled={deleteFavoritesMutation.isPending}
                   className="h-4 w-4 rounded border-gray-300 text-red-600 focus:ring-red-500"
                 />
-                <span>전체선택</span>
+                <span>전체 선택</span>
               </label>
 
               <div className="flex items-center gap-3">
@@ -151,16 +111,15 @@ const FavoritesList = () => {
 
                 <button
                   type="button"
-                  onClick={handleDeleteSelected}
-                  disabled={isDeleting}
+                  onClick={() => void handleDeleteSelected()}
+                  disabled={deleteFavoritesMutation.isPending}
                   className="px-4 py-2 text-sm font-medium rounded-lg text-white bg-red-600 hover:bg-red-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition"
                 >
-                  {isDeleting ? "삭제 중..." : "선택 삭제"}
+                  {deleteFavoritesMutation.isPending ? "삭제 중..." : "선택 삭제"}
                 </button>
               </div>
             </div>
 
-            {/* 목록 */}
             <div className="space-y-4">
               {favorites.map((place) => {
                 const checked = selectedIds.includes(place.placeId);
@@ -173,28 +132,22 @@ const FavoritesList = () => {
                     }`}
                   >
                     <div className="flex items-start gap-4">
-                      {/* 체크박스 */}
                       <div className="pt-1 shrink-0">
                         <input
                           type="checkbox"
                           checked={checked}
                           onChange={() => handleToggleOne(place.placeId)}
-                          disabled={isDeleting}
+                          disabled={deleteFavoritesMutation.isPending}
                           className="h-4 w-4 rounded border-gray-300 text-red-600 focus:ring-red-500"
                         />
                       </div>
 
-                      {/* 내용 */}
                       <div className="flex-1 min-w-0">
                         <div className="flex items-start justify-between gap-4">
                           <div className="min-w-0">
                             <h2 className="text-lg font-bold text-gray-900">{place.placeName || "이름 없는 장소"}</h2>
-
                             <p className="text-sm text-gray-500 mt-1">{place.category || "카테고리 정보 없음"}</p>
-
-                            <p className="text-sm text-gray-600 mt-2 break-words">
-                              {place.address || "주소 정보 없음"}
-                            </p>
+                            <p className="text-sm text-gray-600 mt-2 break-words">{place.address || "주소 정보 없음"}</p>
 
                             {place.createdAt && (
                               <p className="text-xs text-gray-400 mt-3">저장일: {formatDateTime(place.createdAt)}</p>

@@ -4,10 +4,10 @@
   - 식당 상세 화면을 조합하고 상세 조회 훅과 서브 컴포넌트를 연결하는 컨테이너 컴포넌트
 */
 import { useLocation, useNavigate, useParams } from "react-router-dom";
-import BackButton from "../form/BackButton";
-import ImageViewerModal from "../share/ImageViewerModal";
 import { usePlaceDetailData } from "../../hooks/usePlaceDetailData";
 import type { Place } from "../../types/place/place.types";
+import BackButton from "../form/BackButton";
+import ImageViewerModal from "../share/ImageViewerModal";
 import PlaceCollectionSaveModal from "./PlaceCollectionSaveModal";
 import PlaceImageGallery from "./PlaceImageGallery";
 import PlaceReviewSection from "./PlaceReviewSection";
@@ -49,7 +49,7 @@ const PlaceDetailView = () => {
   const moveToLoginIfNeeded = () => {
     if (token) return false;
 
-    alert("로그인 후 이용가능합니다.");
+    alert("로그인 후 이용 가능합니다.");
     navigate("/login");
     return true;
   };

@@ -60,7 +60,11 @@ const HeaderNotificationMenu = ({
             </div>
 
             {notifications.length > 0 && unreadCount > 0 && (
-              <button type="button" onClick={() => void onReadAll()} className="text-xs font-medium text-red-600 hover:text-red-700">
+              <button
+                type="button"
+                onClick={() => void onReadAll()}
+                className="text-xs font-medium text-red-600 hover:text-red-700"
+              >
                 전체 읽음
               </button>
             )}
@@ -100,7 +104,11 @@ const HeaderNotificationMenu = ({
 
           {notifications.length > 5 && (
             <div className="px-4 py-3 border-t bg-gray-50">
-              <button type="button" onClick={onClickViewAll} className="w-full text-sm font-medium text-gray-700 hover:text-red-600">
+              <button
+                type="button"
+                onClick={onClickViewAll}
+                className="w-full text-sm font-medium text-gray-700 hover:text-red-600"
+              >
                 전체 알림 보기
               </button>
             </div>

@@ -1,39 +1,22 @@
 /*
   file: RecentPlace.tsx
   description
-  - 마이페이지에서 최근 방문 식당 목록을 보여주는 컴포넌트
+  - 마이페이지에서 최근 방문한 식당 목록을 보여주는 컴포넌트
 */
-import { useCallback, useEffect, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
-import { getRecentPlacesApi } from "../../api/place/recentPlace.api";
-import type { RecentPlace as RecentPlaceItem } from "../../types/place/place.types";
+import { useRecentPlacesQuery } from "../../features/mypage/queries/useMyPageQueries";
+import { myPageQueryKeys } from "../../features/mypage/queries/myPageQueryKeys";
 import { formatDateTime } from "../../utils/common";
 
 const RecentPlace = () => {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const recentPlacesQuery = useRecentPlacesQuery();
 
-  const [recentPlaces, setRecentPlaces] = useState<RecentPlaceItem[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState("");
-
-  const fetchRecentPlaces = useCallback(async () => {
-    try {
-      setIsLoading(true);
-      setError("");
-
-      const data = await getRecentPlacesApi();
-      setRecentPlaces(data);
-    } catch (err) {
-      console.error("최근 방문 식당 조회 실패", err);
-      setError("최근 방문 기록을 불러오지 못했습니다. 잠시 후 다시 시도해주세요.");
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    fetchRecentPlaces();
-  }, [fetchRecentPlaces]);
+  const handleRefresh = async () => {
+    await queryClient.invalidateQueries({ queryKey: myPageQueryKeys.recentPlaces() });
+  };
 
   return (
     <section className="bg-white rounded-xl shadow-md p-6 mb-6">
@@ -45,29 +28,29 @@ const RecentPlace = () => {
 
         <button
           type="button"
-          onClick={fetchRecentPlaces}
+          onClick={() => void handleRefresh()}
           className="px-3 py-2 text-sm font-medium rounded-lg border border-gray-200 text-gray-700 hover:bg-gray-50 transition"
         >
           새로고침
         </button>
       </div>
 
-      {isLoading ? (
+      {recentPlacesQuery.isLoading ? (
         <div className="rounded-xl border border-gray-100 bg-gray-50 px-4 py-8 text-center text-sm text-gray-500">
           최근 방문 기록을 불러오는 중입니다...
         </div>
-      ) : error ? (
+      ) : recentPlacesQuery.isError ? (
         <div className="rounded-xl border border-red-100 bg-red-50 px-4 py-8 text-center text-sm text-red-600">
-          {error}
+          최근 방문 기록을 불러오지 못했습니다. 잠시 후 다시 시도해주세요.
         </div>
-      ) : recentPlaces.length === 0 ? (
+      ) : !recentPlacesQuery.data || recentPlacesQuery.data.length === 0 ? (
         <div className="rounded-xl border border-gray-100 bg-gray-50 px-4 py-8 text-center">
           <p className="text-gray-700 font-medium">아직 최근 방문 기록이 없습니다.</p>
-          <p className="text-sm text-gray-500 mt-2">식당 상세 페이지를 둘러보면 이곳에 기록이 쌓입니다.</p>
+          <p className="text-sm text-gray-500 mt-2">식당 상세 페이지를 둘러보면 자동으로 기록이 쌓입니다.</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {recentPlaces.map((place) => (
+          {recentPlacesQuery.data.map((place) => (
             <button
               key={place.id}
               type="button"
