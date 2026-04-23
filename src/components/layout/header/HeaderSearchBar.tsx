@@ -3,7 +3,8 @@
   description
   - 헤더 상단의 자동완성 검색 입력창과 추천 목록 UI를 담당하는 컴포넌트
 */
-import type { RefObject } from "react";
+import { useEffect, useId, useRef, type RefObject } from "react";
+import { APP_MESSAGES } from "../../../constants/messages";
 import type { PlaceAutoCompleteItem } from "../../../types/place/place.types";
 
 type HeaderSearchBarProps = {
@@ -16,6 +17,7 @@ type HeaderSearchBarProps = {
   onOpenSuggestions: () => void;
   onSelectSuggestion: (item: PlaceAutoCompleteItem) => void;
   onSubmit: () => void;
+  onClose: () => void;
 };
 
 const HeaderSearchBar = ({
@@ -28,11 +30,28 @@ const HeaderSearchBar = ({
   onOpenSuggestions,
   onSelectSuggestion,
   onSubmit,
+  onClose,
 }: HeaderSearchBarProps) => {
+  const listId = useId();
+  const inputRef = useRef<HTMLInputElement | null>(null);
+
+  useEffect(() => {
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        onClose();
+        inputRef.current?.blur();
+      }
+    };
+
+    window.addEventListener("keydown", handleEscape);
+    return () => window.removeEventListener("keydown", handleEscape);
+  }, [onClose]);
+
   return (
     <div className="hidden md:flex justify-self-center w-full max-w-2xl">
       <div className="relative w-full" ref={searchRef}>
         <input
+          ref={inputRef}
           type="text"
           value={searchKeyword}
           onChange={(event) => onChangeKeyword(event.target.value)}
@@ -46,8 +65,11 @@ const HeaderSearchBar = ({
               void onSubmit();
             }
           }}
-          placeholder="식당, 메뉴, 지역을 검색해보세요"
+          placeholder={APP_MESSAGES.header.searchPlaceholder}
           className="w-full py-2 pl-4 pr-10 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
+          aria-expanded={isSearchOpen}
+          aria-controls={listId}
+          aria-autocomplete="list"
         />
 
         <button
@@ -67,16 +89,21 @@ const HeaderSearchBar = ({
         </button>
 
         {isSearchOpen && (
-          <div className="absolute top-full mt-2 w-full bg-white border border-gray-200 rounded-xl shadow-lg overflow-hidden z-50">
+          <div
+            id={listId}
+            role="listbox"
+            className="absolute top-full mt-2 w-full bg-white border border-gray-200 rounded-xl shadow-lg overflow-hidden z-50"
+          >
             {isSearchLoading ? (
-              <div className="px-4 py-3 text-sm text-gray-500">검색 중입니다...</div>
+              <div className="px-4 py-3 text-sm text-gray-500">{APP_MESSAGES.header.searchLoading}</div>
             ) : suggestions.length === 0 ? (
-              <div className="px-4 py-3 text-sm text-gray-500">검색 결과가 없습니다.</div>
+              <div className="px-4 py-3 text-sm text-gray-500">{APP_MESSAGES.header.searchEmpty}</div>
             ) : (
               suggestions.map((item) => (
                 <button
                   key={item.placeId}
                   type="button"
+                  role="option"
                   onClick={() => void onSelectSuggestion(item)}
                   className="w-full px-4 py-3 text-left hover:bg-red-50 border-b last:border-b-0"
                 >

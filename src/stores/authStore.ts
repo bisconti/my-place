@@ -1,23 +1,21 @@
 /*
-  파일명: authStore.ts
-  기능
-  - zustand 기반 인증 전역 상태 관리
+  file: authStore.ts
+  description
+  - zustand 기반 인증 상태를 관리하고 access token은 짧은 저장(sessionStorage)으로 유지하는 파일
 */
-
+import toast from "react-hot-toast";
 import { create } from "zustand";
-import { authStorage } from "./authStorage";
+import { APP_MESSAGES } from "../constants/messages";
 import type { User } from "../types/user/user.types";
+import { authStorage } from "./authStorage";
 
 type AuthStore = {
   user: User | null;
   token: string | null;
-  refreshToken: string | null;
   bootstrapped: boolean;
-
-  initAuth: () => void;
-  setAuth: (payload: { user: User; token: string; refreshToken?: string | null }) => void;
+  initAuth: () => Promise<void>;
+  setAuth: (payload: { user: User; token: string }) => void;
   setAccessToken: (token: string | null) => void;
-  setRefreshToken: (refreshToken: string | null) => void;
   setUser: (user: User | null) => void;
   logout: (options?: { silent?: boolean; reason?: "manual" | "expired" }) => void;
 };
@@ -25,36 +23,24 @@ type AuthStore = {
 export const useAuthStore = create<AuthStore>((set) => ({
   user: null,
   token: null,
-  refreshToken: null,
   bootstrapped: false,
 
-  initAuth: () => {
-    const user = authStorage.getUser();
-    const token = authStorage.getAccessToken();
-    const refreshToken = authStorage.getRefreshToken();
-
+  initAuth: async () => {
     set({
-      user,
-      token,
-      refreshToken,
+      user: authStorage.getUser(),
+      token: authStorage.getAccessToken(),
       bootstrapped: true,
     });
   },
 
-  setAuth: ({ user, token, refreshToken }) => {
+  setAuth: ({ user, token }) => {
     authStorage.setUser(user);
     authStorage.setAccessToken(token);
-
-    if (refreshToken) {
-      authStorage.setRefreshToken(refreshToken);
-    }
-
     authStorage.setHadAuthSession();
 
     set({
       user,
       token,
-      refreshToken: refreshToken ?? authStorage.getRefreshToken(),
       bootstrapped: true,
     });
   },
@@ -67,16 +53,6 @@ export const useAuthStore = create<AuthStore>((set) => ({
     }
 
     set({ token });
-  },
-
-  setRefreshToken: (refreshToken) => {
-    if (refreshToken) {
-      authStorage.setRefreshToken(refreshToken);
-    } else {
-      authStorage.clearRefreshToken();
-    }
-
-    set({ refreshToken });
   },
 
   setUser: (user) => {
@@ -95,19 +71,19 @@ export const useAuthStore = create<AuthStore>((set) => ({
     set({
       user: null,
       token: null,
-      refreshToken: null,
       bootstrapped: true,
     });
 
-    if (!silent) {
-      if (reason === "manual") {
-        window.location.href = "/";
-        return;
-      }
+    if (silent) return;
 
-      alert("세션이 만료되어 로그아웃되었어요. 다시 로그인해 주세요.");
-      window.location.href = "/login";
+    if (reason === "manual") {
+      toast.success(APP_MESSAGES.auth.logoutSuccess);
+      window.location.href = "/";
+      return;
     }
+
+    toast.error(APP_MESSAGES.auth.sessionExpired);
+    window.location.href = "/login";
   },
 }));
 

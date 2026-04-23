@@ -1,35 +1,59 @@
 /*
-  파일명: AuthProvider.tsx
-  기능 
-  - zustand auth state/action을 AuthContext로 내려주는 bridge
-  - 앱 시작 시 initAuth()로 storage 기반 인증 상태 복구
+  file: AuthProvider.tsx
+  description
+  - zustand 인증 상태와 refresh cookie 기반 access token 부트스트랩을 AuthContext로 연결하는 파일
 */
 import { useCallback, useEffect, useMemo, type ReactNode } from "react";
-import { AuthContext } from "./AuthContext";
-import type { User } from "../types/user/user.types";
+import { api } from "../api/api";
+import { authStorage } from "../stores/authStorage";
 import { useAuthStore } from "../stores/authStore";
+import type { User } from "../types/user/user.types";
+import { AuthContext } from "./AuthContext";
 
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const user = useAuthStore((state) => state.user);
   const token = useAuthStore((state) => state.token);
-
   const initAuth = useAuthStore((state) => state.initAuth);
   const setAuth = useAuthStore((state) => state.setAuth);
   const logoutStore = useAuthStore((state) => state.logout);
   const setUserStore = useAuthStore((state) => state.setUser);
+  const setAccessToken = useAuthStore((state) => state.setAccessToken);
 
   useEffect(() => {
-    initAuth();
-  }, [initAuth]);
+    const bootstrap = async () => {
+      await initAuth();
+
+      if (authStorage.getAccessToken()) {
+        return;
+      }
+
+      if (!authStorage.getUser() && !authStorage.getHadAuthSession()) {
+        return;
+      }
+
+      try {
+        const response = await api.post<{ accessToken?: string }>("/auth/refresh");
+        const nextToken = response.data?.accessToken;
+
+        if (nextToken) {
+          setAccessToken(nextToken);
+          authStorage.setHadAuthSession();
+        }
+      } catch {
+        logoutStore({ silent: true, reason: "expired" });
+      }
+    };
+
+    void bootstrap();
+  }, [initAuth, logoutStore, setAccessToken]);
 
   const isLoggedIn = !!user && !!token;
 
   const login = useCallback(
-    (userData: User, accessToken: string, refreshToken?: string) => {
+    (userData: User, accessToken: string) => {
       setAuth({
         user: userData,
         token: accessToken,
-        refreshToken,
       });
     },
     [setAuth]

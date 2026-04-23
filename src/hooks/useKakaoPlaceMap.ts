@@ -1,19 +1,18 @@
 /*
   file: useKakaoPlaceMap.ts
   description
-  - 카카오 지도 인스턴스와 검색 흐름을 오케스트레이션하는 메인 지도 훅
+  - 카카오 지도 인스턴스, 선택 상태, 마커 렌더링을 조합하는 메인 지도 훅
 */
 import { useCallback, useEffect, useMemo, useRef, useState, type RefObject } from "react";
-import { getPlaceListMetadata } from "../api/place/place.api";
 import { usePlaceLikeState } from "./usePlaceLikeState";
-import { applyPlaceListFiltersAndSort, mergePlaceListMetadata } from "../utils/placeList";
+import { useKakaoPlaceData } from "./useKakaoPlaceData";
+import { applyPlaceListFiltersAndSort } from "../utils/placeList";
 import {
   buildPlaceInfoContent,
   DEFAULT_CENTER,
   getGeolocation,
   readSavedMapCenter,
   saveMapCenter,
-  searchPlacesInCurrentBounds,
   type MapCenter,
 } from "../utils/kakaoPlaceMap";
 import type { KakaoInfoWindow, KakaoMap, KakaoMarker, KakaoPlaces } from "../types/kakaoMap.types";
@@ -124,47 +123,17 @@ export function useKakaoPlaceMap(): UseKakaoPlaceMapReturn {
     [openInfo]
   );
 
-  const fetchPlaces = useCallback(
-    async (overrideKeyword?: string) => {
-      const map = kakaoMapRef.current;
-      const placesService = placesServiceRef.current;
-      if (!map || !placesService) return;
-
-      const resolvedKeyword = (overrideKeyword ?? keyword).trim() || "맛집";
-      setLoading(true);
-
-      try {
-        const nearbyPlaces = await searchPlacesInCurrentBounds(placesService, map, resolvedKeyword, likedIds);
-
-        if (nearbyPlaces.length === 0) {
-          setBasePlaces([]);
-          renderMarkers([]);
-          return;
-        }
-
-        try {
-          const metadata = await getPlaceListMetadata({
-            placeIds: nearbyPlaces.map((place) => place.id),
-          });
-
-          const enrichedPlaces = mergePlaceListMetadata(nearbyPlaces, metadata, likedIds);
-          setBasePlaces(enrichedPlaces);
-          renderMarkers(enrichedPlaces);
-        } catch (error) {
-          console.error("식당 목록 메타데이터 조회 실패", error);
-          setBasePlaces(nearbyPlaces);
-          renderMarkers(nearbyPlaces);
-        }
-      } finally {
-        setLoading(false);
-      }
-    },
-    [keyword, likedIds, renderMarkers]
-  );
-
   useEffect(() => {
     renderMarkers(places);
   }, [places, renderMarkers]);
+
+  const fetchPlaces = useKakaoPlaceData({
+    keyword,
+    likedIds,
+    renderMarkers,
+    setBasePlaces,
+    setLoading,
+  });
 
   const focusPlaceById = useCallback((id: string) => {
     setSelectedId(id);
@@ -174,14 +143,14 @@ export function useKakaoPlaceMap(): UseKakaoPlaceMapReturn {
     async (value: string) => {
       const trimmedKeyword = value.trim();
       setKeyword(trimmedKeyword);
-      await fetchPlaces(trimmedKeyword);
+      await fetchPlaces(kakaoMapRef.current, placesServiceRef.current, trimmedKeyword);
       setNeedRefetch(false);
     },
     [fetchPlaces]
   );
 
   const refetchHere = useCallback(async () => {
-    await fetchPlaces();
+    await fetchPlaces(kakaoMapRef.current, placesServiceRef.current);
     setNeedRefetch(false);
   }, [fetchPlaces]);
 
@@ -259,7 +228,7 @@ export function useKakaoPlaceMap(): UseKakaoPlaceMapReturn {
         } catch {
           // ignore geolocation failure and keep current center
         } finally {
-          await fetchPlaces();
+          await fetchPlaces(map, placesServiceRef.current);
           setNeedRefetch(false);
         }
       })();

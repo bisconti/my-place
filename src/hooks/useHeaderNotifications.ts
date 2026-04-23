@@ -1,17 +1,19 @@
 /*
   file: useHeaderNotifications.ts
   description
-  - 헤더 알림 드롭다운의 조회, 읽음 처리, 열림 상태를 관리하는 훅
+  - 헤더 알림 드롭다운의 열림 상태와 React Query 기반 조회/읽음 처리를 담당하는 훅
 */
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
+import { APP_MESSAGES } from "../constants/messages";
 import {
-  getUnreadNotificationCount,
-  getUserNotifications,
-  readAllUserNotifications,
-  readUserNotification,
-} from "../api/notification/userNotification.api";
+  useReadAllNotificationsMutation,
+  useReadNotificationMutation,
+  useUnreadNotificationCountQuery,
+  useUserNotificationsQuery,
+} from "../features/notification/queries/useNotificationQueries";
 import { getPlaceDetail } from "../api/place/place.api";
 import { useAuthStore } from "../stores/authStore";
+import { handleAppError } from "../utils/appError";
 import type { UserNotification } from "../types/notification/userNotification.type";
 
 function formatNotificationDate(dateString: string) {
@@ -36,55 +38,18 @@ type HeaderNotificationActions = {
 
 export function useHeaderNotifications(actions: HeaderNotificationActions) {
   const user = useAuthStore((state) => state.user);
-
-  const [unreadCount, setUnreadCount] = useState(0);
-  const [notifications, setNotifications] = useState<UserNotification[]>([]);
   const [isNotificationOpen, setIsNotificationOpen] = useState(false);
-  const [isNotificationLoading, setIsNotificationLoading] = useState(false);
-
   const notificationRef = useRef<HTMLDivElement | null>(null);
 
-  const fetchUnreadCount = useCallback(async () => {
-    if (!user) {
-      setUnreadCount(0);
-      return;
-    }
+  const unreadCountQuery = useUnreadNotificationCountQuery(!!user);
+  const notificationsQuery = useUserNotificationsQuery(!!user && isNotificationOpen);
+  const readNotificationMutation = useReadNotificationMutation();
+  const readAllMutation = useReadAllNotificationsMutation();
 
-    try {
-      const data = await getUnreadNotificationCount();
-      setUnreadCount(data.unreadCount);
-    } catch (error) {
-      console.error("읽지 않은 알림 개수 조회 실패", error);
-    }
-  }, [user]);
-
-  const fetchNotifications = useCallback(async () => {
-    if (!user) {
-      setNotifications([]);
-      return;
-    }
-
-    try {
-      setIsNotificationLoading(true);
-      const data = await getUserNotifications();
-      setNotifications(data);
-    } catch (error) {
-      console.error("알림 목록 조회 실패", error);
-    } finally {
-      setIsNotificationLoading(false);
-    }
-  }, [user]);
-
-  useEffect(() => {
-    if (!user) {
-      setUnreadCount(0);
-      setNotifications([]);
-      setIsNotificationOpen(false);
-      return;
-    }
-
-    void fetchUnreadCount();
-  }, [fetchUnreadCount, user]);
+  const unreadCount = unreadCountQuery.data?.unreadCount ?? 0;
+  const notifications = notificationsQuery.data ?? [];
+  const isNotificationLoading =
+    notificationsQuery.isLoading || readNotificationMutation.isPending || readAllMutation.isPending;
 
   const toggleNotifications = useCallback(async () => {
     if (!user) {
@@ -92,31 +57,19 @@ export function useHeaderNotifications(actions: HeaderNotificationActions) {
       return;
     }
 
-    const nextOpen = !isNotificationOpen;
-    setIsNotificationOpen(nextOpen);
+    setIsNotificationOpen((prev) => !prev);
+  }, [actions, user]);
 
-    if (nextOpen) {
-      await Promise.all([fetchNotifications(), fetchUnreadCount()]);
-    }
-  }, [actions, fetchNotifications, fetchUnreadCount, isNotificationOpen, user]);
-
-  const openAllNotificationsPage = () => {
+  const openAllNotificationsPage = useCallback(() => {
     setIsNotificationOpen(false);
     actions.onOpenNotificationPage();
-  };
+  }, [actions]);
 
   const handleNotificationClick = useCallback(
     async (notification: UserNotification) => {
       try {
         if (!notification.isRead) {
-          await readUserNotification(notification.id);
-
-          setNotifications((prev) =>
-            prev.map((item) =>
-              item.id === notification.id ? { ...item, isRead: true, readAt: new Date().toISOString() } : item
-            )
-          );
-          setUnreadCount((prev) => Math.max(0, prev - 1));
+          await readNotificationMutation.mutateAsync(notification.id);
         }
 
         setIsNotificationOpen(false);
@@ -129,42 +82,53 @@ export function useHeaderNotifications(actions: HeaderNotificationActions) {
 
         actions.onOpenFallbackPage();
       } catch (error) {
-        console.error("알림 읽음 처리 실패", error);
-        actions.onError("알림 처리에 실패했습니다.");
+        actions.onError(
+          handleAppError(error, {
+            fallbackMessage: APP_MESSAGES.header.notificationActionFailed,
+            logLabel: "알림 읽음 처리 실패",
+          })
+        );
       }
     },
-    [actions]
+    [actions, readNotificationMutation]
   );
 
   const handleReadAllNotifications = useCallback(async () => {
     try {
-      await readAllUserNotifications();
-
-      setNotifications((prev) =>
-        prev.map((item) => ({
-          ...item,
-          isRead: true,
-          readAt: item.readAt ?? new Date().toISOString(),
-        }))
-      );
-      setUnreadCount(0);
+      await readAllMutation.mutateAsync();
     } catch (error) {
-      console.error("전체 알림 읽음 처리 실패", error);
-      actions.onError("전체 읽음 처리에 실패했습니다.");
+      actions.onError(
+        handleAppError(error, {
+          fallbackMessage: APP_MESSAGES.header.notificationActionFailed,
+          logLabel: "전체 알림 읽음 처리 실패",
+        })
+      );
     }
-  }, [actions]);
+  }, [actions, readAllMutation]);
 
-  return {
-    notificationRef,
-    unreadCount,
-    notifications,
-    isNotificationOpen,
-    isNotificationLoading,
-    formatNotificationDate,
-    setIsNotificationOpen,
-    toggleNotifications,
-    openAllNotificationsPage,
-    handleNotificationClick,
-    handleReadAllNotifications,
-  };
+  return useMemo(
+    () => ({
+      notificationRef,
+      unreadCount,
+      notifications,
+      isNotificationOpen,
+      isNotificationLoading,
+      formatNotificationDate,
+      setIsNotificationOpen,
+      toggleNotifications,
+      openAllNotificationsPage,
+      handleNotificationClick,
+      handleReadAllNotifications,
+    }),
+    [
+      unreadCount,
+      notifications,
+      isNotificationOpen,
+      isNotificationLoading,
+      toggleNotifications,
+      openAllNotificationsPage,
+      handleNotificationClick,
+      handleReadAllNotifications,
+    ]
+  );
 }

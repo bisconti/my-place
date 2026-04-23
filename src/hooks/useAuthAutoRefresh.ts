@@ -1,14 +1,13 @@
 /*
-  파일명: useAuthAutoRefresh.ts
-  기능
-  - 사용자 활동 중 access token 만료 임박 시 refresh 호출
+  file: useAuthAutoRefresh.ts
+  description
+  - 사용자 활동 중 access token 만료가 가까우면 refresh cookie를 사용해 access token을 갱신하는 훅
 */
-
 import { useEffect, useRef } from "react";
+import type { RefreshResponse } from "../types/user/auth.types";
 import { api } from "../api/api";
 import { authStorage } from "../stores/authStorage";
 import { runOnUnauthorized, useAuthStore } from "../stores/authStore";
-import type { RefreshResponse } from "../types/user/auth.types";
 
 const getJwtLeftSec = () => {
   const token = authStorage.getAccessToken();
@@ -28,30 +27,22 @@ export function useAuthAutoRefresh() {
   useEffect(() => {
     const onActivity = async () => {
       const token = authStorage.getAccessToken();
-      const refreshToken = authStorage.getRefreshToken();
       const hadAuthSession = authStorage.getHadAuthSession();
 
-      if (!token && !refreshToken) return;
+      if (!token && !hadAuthSession) return;
 
       const left = getJwtLeftSec();
-
-      if (left > 5 * 60) return;
+      if (token && left > 5 * 60) return;
 
       if (Date.now() - lastRefreshAt.current < 60_000) return;
       lastRefreshAt.current = Date.now();
 
       try {
-        const res = await api.post<RefreshResponse>("/auth/refresh", refreshToken ? { refreshToken } : undefined);
+        const response = await api.post<RefreshResponse>("/auth/refresh");
+        const nextToken = response.data?.accessToken;
 
-        const newAccessToken = res.data?.accessToken;
-        const newRefreshToken = res.data?.refreshToken;
-
-        if (newAccessToken) {
-          useAuthStore.getState().setAccessToken(newAccessToken);
-        }
-
-        if (newRefreshToken) {
-          useAuthStore.getState().setRefreshToken(newRefreshToken);
+        if (nextToken) {
+          useAuthStore.getState().setAccessToken(nextToken);
         }
 
         authStorage.setHadAuthSession();

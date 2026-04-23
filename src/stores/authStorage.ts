@@ -9,7 +9,6 @@ import type { User } from "../types/user/user.types";
 const STORAGE_KEYS = {
   USER: "user",
   TOKEN: "token",
-  REFRESH_TOKEN: "refreshToken",
   HAD_AUTH_SESSION: "hadAuthSession",
   LAST_ACTIVITY: "lastActivityAt",
 } as const;
@@ -36,27 +35,15 @@ export const authStorage = {
   },
 
   getAccessToken(): string | null {
-    return localStorage.getItem(STORAGE_KEYS.TOKEN);
+    return sessionStorage.getItem(STORAGE_KEYS.TOKEN);
   },
 
   setAccessToken(token: string) {
-    localStorage.setItem(STORAGE_KEYS.TOKEN, token);
+    sessionStorage.setItem(STORAGE_KEYS.TOKEN, token);
   },
 
   clearAccessToken() {
-    localStorage.removeItem(STORAGE_KEYS.TOKEN);
-  },
-
-  getRefreshToken(): string | null {
-    return localStorage.getItem(STORAGE_KEYS.REFRESH_TOKEN);
-  },
-
-  setRefreshToken(refreshToken: string) {
-    localStorage.setItem(STORAGE_KEYS.REFRESH_TOKEN, refreshToken);
-  },
-
-  clearRefreshToken() {
-    localStorage.removeItem(STORAGE_KEYS.REFRESH_TOKEN);
+    sessionStorage.removeItem(STORAGE_KEYS.TOKEN);
   },
 
   getHadAuthSession(): boolean {
@@ -73,8 +60,7 @@ export const authStorage = {
 
   clearAllAuth() {
     localStorage.removeItem(STORAGE_KEYS.USER);
-    localStorage.removeItem(STORAGE_KEYS.TOKEN);
-    localStorage.removeItem(STORAGE_KEYS.REFRESH_TOKEN);
+    sessionStorage.removeItem(STORAGE_KEYS.TOKEN);
     sessionStorage.removeItem(STORAGE_KEYS.HAD_AUTH_SESSION);
   },
 

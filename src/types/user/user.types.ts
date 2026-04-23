@@ -1,7 +1,7 @@
 /*
   file: user.types.ts
   description
-  - 사용자 도메인 전반에서 사용하는 인증, 프로필, 폼 관련 타입을 정의하는 파일
+  - 사용자, 인증 컨텍스트, 회원가입/비밀번호 재설정 폼에 필요한 타입을 정의하는 파일
 */
 import { type FieldErrors, type UseFormRegister } from "react-hook-form";
 
@@ -13,7 +13,7 @@ export interface User {
 export interface AuthContextType {
   user: User | null;
   isLoggedIn: boolean;
-  login: (userData: User, accessToken: string, refreshToken?: string) => void;
+  login: (userData: User, accessToken: string) => void;
   logout: () => void;
   updateUser: (partial: Partial<User>) => void;
 }

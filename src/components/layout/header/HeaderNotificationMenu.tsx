@@ -3,7 +3,8 @@
   description
   - 헤더의 알림 버튼과 최근 알림 드롭다운 UI를 담당하는 컴포넌트
 */
-import type { RefObject } from "react";
+import { useEffect, useId, useRef, type RefObject } from "react";
+import { APP_MESSAGES } from "../../../constants/messages";
 import type { UserNotification } from "../../../types/notification/userNotification.type";
 
 type HeaderNotificationMenuProps = {
@@ -17,6 +18,7 @@ type HeaderNotificationMenuProps = {
   onReadAll: () => void;
   onClickNotification: (notification: UserNotification) => void;
   onClickViewAll: () => void;
+  onClose: () => void;
 };
 
 const HeaderNotificationMenu = ({
@@ -30,14 +32,36 @@ const HeaderNotificationMenu = ({
   onReadAll,
   onClickNotification,
   onClickViewAll,
+  onClose,
 }: HeaderNotificationMenuProps) => {
+  const panelId = useId();
+  const buttonRef = useRef<HTMLButtonElement | null>(null);
+
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        onClose();
+        buttonRef.current?.focus();
+      }
+    };
+
+    window.addEventListener("keydown", handleEscape);
+    return () => window.removeEventListener("keydown", handleEscape);
+  }, [isOpen, onClose]);
+
   return (
     <div className="relative" ref={notificationRef}>
       <button
+        ref={buttonRef}
         type="button"
         onClick={() => void onToggle()}
         className="relative flex items-center justify-center w-10 h-10 rounded-full border border-gray-200 bg-white text-gray-600 hover:text-red-600 hover:bg-gray-50 transition"
         aria-label="알림"
+        aria-expanded={isOpen}
+        aria-controls={panelId}
+        aria-haspopup="dialog"
       >
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path
@@ -52,11 +76,16 @@ const HeaderNotificationMenu = ({
       </button>
 
       {isOpen && (
-        <div className="absolute right-0 mt-2 w-96 max-w-[90vw] bg-white border border-gray-200 rounded-2xl shadow-xl overflow-hidden z-50">
+        <div
+          id={panelId}
+          role="dialog"
+          aria-modal="false"
+          className="absolute right-0 mt-2 w-96 max-w-[90vw] bg-white border border-gray-200 rounded-2xl shadow-xl overflow-hidden z-50"
+        >
           <div className="flex items-center justify-between px-4 py-3 border-b bg-gray-50">
             <div>
-              <p className="text-sm font-semibold text-gray-900">알림</p>
-              <p className="text-xs text-gray-500">최근 알림을 확인해보세요.</p>
+              <p className="text-sm font-semibold text-gray-900">{APP_MESSAGES.header.notificationsTitle}</p>
+              <p className="text-xs text-gray-500">{APP_MESSAGES.header.notificationsSubtitle}</p>
             </div>
 
             {notifications.length > 0 && unreadCount > 0 && (
@@ -65,16 +94,16 @@ const HeaderNotificationMenu = ({
                 onClick={() => void onReadAll()}
                 className="text-xs font-medium text-red-600 hover:text-red-700"
               >
-                전체 읽음
+                {APP_MESSAGES.header.notificationsReadAll}
               </button>
             )}
           </div>
 
           <div className="max-h-96 overflow-y-auto">
             {isLoading ? (
-              <div className="px-4 py-8 text-sm text-center text-gray-500">알림을 불러오는 중입니다...</div>
+              <div className="px-4 py-8 text-sm text-center text-gray-500">{APP_MESSAGES.header.notificationsLoading}</div>
             ) : notifications.length === 0 ? (
-              <div className="px-4 py-8 text-sm text-center text-gray-500">아직 알림이 없습니다.</div>
+              <div className="px-4 py-8 text-sm text-center text-gray-500">{APP_MESSAGES.header.notificationsEmpty}</div>
             ) : (
               notifications.slice(0, 5).map((notification) => (
                 <button
@@ -109,7 +138,7 @@ const HeaderNotificationMenu = ({
                 onClick={onClickViewAll}
                 className="w-full text-sm font-medium text-gray-700 hover:text-red-600"
               >
-                전체 알림 보기
+                {APP_MESSAGES.header.notificationsViewAll}
               </button>
             </div>
           )}

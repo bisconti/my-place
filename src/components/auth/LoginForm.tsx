@@ -1,22 +1,23 @@
 /*
   file: LoginForm.tsx
   description
-  - 로그인 입력, 유효성 검증, 인증 성공 후 전역 로그인 상태 반영을 담당하는 컴포넌트
+  - 로그인 폼 입력과 인증 실패 안내, 전역 인증 상태 반영을 담당하는 컴포넌트
 */
 import { yupResolver } from "@hookform/resolvers/yup";
 import axios from "axios";
 import { useMemo, useState } from "react";
 import { useForm, type SubmitHandler } from "react-hook-form";
 import { Link, useNavigate } from "react-router-dom";
-import { signIn } from "../../api/user/auth.api";
-import { LoginSchema, type LoginFormData } from "../../schemas/authSchema";
+import { APP_MESSAGES } from "../../constants/messages";
 import { useAuth } from "../../hooks/useAuth";
+import { LoginSchema, type LoginFormData } from "../../schemas/authSchema";
+import { handleAppError } from "../../utils/appError";
+import { signIn } from "../../api/user/auth.api";
 import BackButton from "../form/BackButton";
 
 const LoginForm = () => {
   const navigate = useNavigate();
   const { login } = useAuth();
-
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
 
@@ -35,18 +36,21 @@ const LoginForm = () => {
 
     try {
       const response = await signIn(data);
-      const { user, token, refreshToken } = response.data;
+      const { user, token } = response.data;
 
-      login(user, token, refreshToken);
+      login(user, token);
       navigate("/");
     } catch (error) {
-      console.error("로그인 실패", error);
-
       if (axios.isAxiosError(error) && error.response) {
         const result = error.response.data as { message?: string };
-        setAuthError(result.message || "로그인에 실패했습니다.");
+        setAuthError(result.message || APP_MESSAGES.auth.loginFailed);
       } else {
-        setAuthError("네트워크 연결 또는 서버 상태를 확인해주세요.");
+        setAuthError(
+          handleAppError(error, {
+            fallbackMessage: APP_MESSAGES.auth.networkError,
+            logLabel: "로그인 실패",
+          })
+        );
       }
     } finally {
       setIsSubmitting(false);
@@ -68,10 +72,10 @@ const LoginForm = () => {
       <div className="w-full max-w-md bg-white p-8 rounded-xl shadow-2xl space-y-6">
         <div className="relative">
           <BackButton path="/" />
-          <h2 className="text-3xl font-bold text-center text-red-600">로그인</h2>
+          <h2 className="text-3xl font-bold text-center text-red-600">{APP_MESSAGES.auth.loginTitle}</h2>
         </div>
 
-        <p className="text-center text-gray-500">맛집 탐색을 시작해보세요</p>
+        <p className="text-center text-gray-500">{APP_MESSAGES.auth.loginSubtitle}</p>
 
         <form className="space-y-4" onSubmit={handleSubmit(onSubmit)} noValidate>
           <div className="flex items-center space-x-4">
@@ -118,26 +122,7 @@ const LoginForm = () => {
             disabled={isSubmitting}
             className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-lg text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition duration-150"
           >
-            {isSubmitting ? (
-              <div className="flex items-center">
-                <svg
-                  className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
-                  xmlns="http://www.w3.org/2000/svg"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                >
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                  <path
-                    className="opacity-75"
-                    fill="currentColor"
-                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                  />
-                </svg>
-                로그인 중...
-              </div>
-            ) : (
-              "로그인"
-            )}
+            {isSubmitting ? "로그인 중..." : APP_MESSAGES.auth.loginTitle}
           </button>
         </form>
 

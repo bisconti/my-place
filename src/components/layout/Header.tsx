@@ -6,10 +6,13 @@
 import { useEffect } from "react";
 import toast from "react-hot-toast";
 import { useLocation, useNavigate } from "react-router-dom";
+import { APP_MESSAGES } from "../../constants/messages";
 import { useHeaderNotifications } from "../../hooks/useHeaderNotifications";
 import { useHeaderPlaceSearch } from "../../hooks/useHeaderPlaceSearch";
 import { useSessionCountdown } from "../../hooks/useSessionCountdown";
 import { useAuthStore } from "../../stores/authStore";
+import { handleAppError } from "../../utils/appError";
+import { signOut } from "../../api/user/auth.api";
 import HeaderAuthSection from "./header/HeaderAuthSection";
 import HeaderNotificationMenu from "./header/HeaderNotificationMenu";
 import HeaderSearchBar from "./header/HeaderSearchBar";
@@ -17,10 +20,8 @@ import HeaderSearchBar from "./header/HeaderSearchBar";
 const Header = () => {
   const navigate = useNavigate();
   const location = useLocation();
-
   const user = useAuthStore((state) => state.user);
   const logout = useAuthStore((state) => state.logout);
-
   const { timeText, touchActivity, isExpired } = useSessionCountdown();
 
   const notifications = useHeaderNotifications({
@@ -53,7 +54,7 @@ const Header = () => {
   useEffect(() => {
     if (!user || !isExpired) return;
 
-    toast.error("세션이 만료되어 로그아웃되었어요.");
+    toast.error(APP_MESSAGES.auth.sessionExpired);
     navigate("/login");
   }, [isExpired, navigate, user]);
 
@@ -75,10 +76,17 @@ const Header = () => {
     return () => window.removeEventListener("mousedown", handleClickOutside);
   }, [notifications, search]);
 
-  const handleLogout = () => {
-    logout({ silent: true, reason: "manual" });
-    toast.success("로그아웃되었습니다.");
-    navigate("/");
+  const handleLogout = async () => {
+    try {
+      await signOut(user?.useremail);
+    } catch (error) {
+      handleAppError(error, {
+        fallbackMessage: APP_MESSAGES.auth.logoutSuccess,
+        logLabel: "로그아웃 API 실패",
+      });
+    } finally {
+      logout({ silent: false, reason: "manual" });
+    }
   };
 
   return (
@@ -87,7 +95,7 @@ const Header = () => {
         <div className="grid grid-cols-3 items-center h-16 gap-4">
           <div className="justify-self-start">
             <a href="/" className="text-2xl font-bold text-red-600 hover:text-red-700">
-              잇츠맵
+              {APP_MESSAGES.header.brandName}
             </a>
           </div>
 
@@ -101,6 +109,7 @@ const Header = () => {
             onOpenSuggestions={() => search.setIsSearchOpen(true)}
             onSelectSuggestion={search.handleSelectSuggestion}
             onSubmit={search.handleSubmitSearch}
+            onClose={() => search.setIsSearchOpen(false)}
           />
 
           <div className="justify-self-end flex items-center gap-3">
@@ -108,7 +117,7 @@ const Header = () => {
               user={user}
               timeText={timeText}
               onLogin={() => navigate("/login")}
-              onLogout={handleLogout}
+              onLogout={() => void handleLogout()}
             />
 
             <div className="flex items-center gap-2">
@@ -124,6 +133,7 @@ const Header = () => {
                   onReadAll={notifications.handleReadAllNotifications}
                   onClickNotification={notifications.handleNotificationClick}
                   onClickViewAll={notifications.openAllNotificationsPage}
+                  onClose={() => notifications.setIsNotificationOpen(false)}
                 />
               )}
 

@@ -1,9 +1,8 @@
 /*
-  파일명: auth.api.ts
-  기능 
-  - 로그인하지 않고 요청할 수 있는 API 정의
+  file: auth.api.ts
+  description
+  - 인증이 필요하지 않은 로그인, 회원가입, 비밀번호 재설정 관련 API를 정의하는 파일
 */
-import { http } from "../http";
 import type { LoginFormData, RegisterFormData } from "../../schemas/authSchema";
 import type {
   EmailDupCheckResponse,
@@ -12,33 +11,32 @@ import type {
   SignUpResponse,
 } from "../../types/user/auth.types";
 import type { ResetPasswordResponse, ValidateResetPasswordTokenResponse } from "../../types/user/user.types";
+import { http } from "../http";
 
-// 이메일 중복체크
 export const checkEmailDup = (email: string) => {
   return http.post<EmailDupCheckResponse>("/auth/checkEmailDup", { email });
 };
 
-// 회원가입
 export const signUp = (data: RegisterFormData) => {
   return http.post<SignUpResponse>("/auth/signUp", data);
 };
 
-// 로그인
 export const signIn = (data: LoginFormData) => {
-  return http.post<SignInResponse>("/auth/login", data);
+  return http.post<SignInResponse>("/auth/login", data, { withCredentials: true });
 };
 
-// 이메일
+export const signOut = (email?: string) => {
+  return http.post("/auth/logout", { email }, { withCredentials: true });
+};
+
 export const sendPasswordEmail = (email: string) => {
   return http.post<SendPasswordEmailResponse>("/auth/sendEmail", { email });
 };
 
-// 비밀번호 재설정 토큰 만료 검증
 export const validateResetPasswordToken = (token: string) => {
   return http.get<ValidateResetPasswordTokenResponse>("/auth/reset-password/validate", { params: { token } });
 };
 
-// 비밀번호 재설정
 export const resetPassword = (token: string, newPassword: string) => {
   return http.post<ResetPasswordResponse>("/auth/reset-password", { token, newPassword });
 };
