@@ -15,6 +15,8 @@ import PlaceListPanel from "./PlaceListPanel";
 export default function MainContent() {
   const navigate = useNavigate();
   const [pendingKeyword, setPendingKeyword] = useState("");
+  const [savedAddressInput, setSavedAddressInput] = useState("");
+  const [isLocationPanelOpen, setIsLocationPanelOpen] = useState(false);
 
   const {
     mapRef,
@@ -24,6 +26,12 @@ export default function MainContent() {
     needRefetch,
     refetchHere,
     goMyLocation,
+    locationSource,
+    setLocationSource,
+    savedLocation,
+    saveLocationByAddress,
+    saveCurrentCenterAsLocation,
+    isLocating,
     search,
     toggleLike,
     focusPlaceById,
@@ -54,6 +62,13 @@ export default function MainContent() {
     });
   };
 
+  const handleSaveAddress = async () => {
+    const saved = await saveLocationByAddress(savedAddressInput);
+    if (saved) {
+      setSavedAddressInput("");
+    }
+  };
+
   return (
     <div className="h-full min-h-0 w-full px-4 py-4">
       <div className="grid h-full min-h-0 grid-cols-1 gap-4 lg:grid-cols-12">
@@ -72,25 +87,94 @@ export default function MainContent() {
         />
 
         <div className="lg:col-span-8 xl:col-span-9 h-full min-h-0 flex flex-col gap-3">
-          <div className="flex items-center gap-2">
+          <div className="space-y-2">
             <form
               onSubmit={(e) => {
                 e.preventDefault();
                 void search(pendingKeyword);
               }}
-              className="flex-1"
+              className="flex items-center gap-2"
             >
               <input
                 value={pendingKeyword}
                 onChange={(e) => setPendingKeyword(e.target.value)}
-                className="w-full border rounded-md px-3 py-2 text-sm"
+                className="flex-1 border rounded-md px-3 py-2 text-sm"
                 placeholder="식당, 메뉴, 지역을 검색해보세요"
               />
+
+              <button type="submit" className="px-3 py-2 rounded-md border text-sm hover:bg-gray-50">
+                검색
+              </button>
             </form>
 
-            <button type="button" onClick={goMyLocation} className="px-3 py-2 rounded-md border text-sm">
-              내 주변
-            </button>
+            <div className="flex flex-wrap items-center gap-2">
+              <div className="inline-flex rounded-md border overflow-hidden text-sm">
+                <button
+                  type="button"
+                  onClick={() => setLocationSource("browser")}
+                  className={`px-3 py-2 ${locationSource === "browser" ? "bg-red-600 text-white" : "bg-white hover:bg-gray-50"}`}
+                >
+                  브라우저 위치
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setLocationSource("saved")}
+                  className={`px-3 py-2 border-l ${locationSource === "saved" ? "bg-red-600 text-white" : "bg-white hover:bg-gray-50"}`}
+                >
+                  저장 위치
+                </button>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => void goMyLocation()}
+                disabled={isLocating}
+                className="px-3 py-2 rounded-md border text-sm hover:bg-gray-50 disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-400"
+              >
+                {isLocating ? "이동 중..." : "내 주변"}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setIsLocationPanelOpen((prev) => !prev)}
+                className="px-3 py-2 rounded-md border text-sm hover:bg-gray-50"
+              >
+                위치 설정
+              </button>
+
+              {savedLocation && (
+                <span className="text-xs text-gray-500 truncate max-w-full sm:max-w-xs">
+                  저장 위치: {savedLocation.address}
+                </span>
+              )}
+            </div>
+
+            {isLocationPanelOpen && (
+              <div className="rounded-lg border bg-gray-50 p-3 space-y-2">
+                <div className="flex flex-col sm:flex-row gap-2">
+                  <input
+                    value={savedAddressInput}
+                    onChange={(e) => setSavedAddressInput(e.target.value)}
+                    className="flex-1 border rounded-md px-3 py-2 text-sm bg-white"
+                    placeholder="저장할 주소를 입력하세요"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => void handleSaveAddress()}
+                    className="px-3 py-2 rounded-md border bg-white text-sm hover:bg-gray-50"
+                  >
+                    주소 저장
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => void saveCurrentCenterAsLocation()}
+                    className="px-3 py-2 rounded-md border bg-white text-sm hover:bg-gray-50"
+                  >
+                    현재 중심 저장
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
 
           <MapPanel mapRef={mapRef} needRefetch={needRefetch} onRefetch={refetchHere} />

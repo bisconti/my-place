@@ -1,22 +1,29 @@
 /*
   file: useKakaoPlaceMap.ts
   description
-  - 카카오 지도 인스턴스, 선택 상태, 마커 렌더링을 조합하는 메인 지도 훅
+  - 카카오 지도 인스턴스, 장소 마커, 내 위치 기준과 마커를 함께 관리하는 메인 지도 훅
 */
 import { useCallback, useEffect, useMemo, useRef, useState, type RefObject } from "react";
-import { usePlaceLikeState } from "./usePlaceLikeState";
 import { useKakaoPlaceData } from "./useKakaoPlaceData";
-import { applyPlaceListFiltersAndSort } from "../utils/placeList";
+import { usePlaceLikeState } from "./usePlaceLikeState";
+import type { KakaoCircle, KakaoInfoWindow, KakaoMap, KakaoMarker, KakaoMarkerImage, KakaoPlaces } from "../types/kakaoMap.types";
+import type { Place, PlaceListFilterState, PlaceSortOption } from "../types/place/place.types";
 import {
+  type BrowserLocation,
   buildPlaceInfoContent,
   DEFAULT_CENTER,
   getGeolocation,
-  readSavedMapCenter,
-  saveMapCenter,
+  type LocationSource,
   type MapCenter,
+  readLocationSource,
+  readSavedLocation,
+  readSavedMapCenter,
+  saveLocationSource,
+  saveMapCenter,
+  saveSavedLocation,
+  type SavedLocation,
 } from "../utils/kakaoPlaceMap";
-import type { KakaoInfoWindow, KakaoMap, KakaoMarker, KakaoPlaces } from "../types/kakaoMap.types";
-import type { Place, PlaceListFilterState, PlaceSortOption } from "../types/place/place.types";
+import { applyPlaceListFiltersAndSort } from "../utils/placeList";
 
 const DEFAULT_FILTERS: PlaceListFilterState = {
   featuredLiveInfoTv: false,
@@ -32,7 +39,13 @@ type UseKakaoPlaceMapReturn = {
   setSelectedId: (id: string | null) => void;
   needRefetch: boolean;
   refetchHere: () => Promise<void>;
-  goMyLocation: () => void;
+  goMyLocation: () => Promise<void>;
+  locationSource: LocationSource;
+  setLocationSource: (source: LocationSource) => void;
+  savedLocation: SavedLocation | null;
+  saveLocationByAddress: (address: string) => Promise<boolean>;
+  saveCurrentCenterAsLocation: () => Promise<boolean>;
+  isLocating: boolean;
   search: (keyword: string) => Promise<void>;
   toggleLike: (id: string) => Promise<void>;
   focusPlaceById: (id: string) => void;
@@ -42,6 +55,12 @@ type UseKakaoPlaceMapReturn = {
   setFilters: (value: PlaceListFilterState) => void;
 };
 
+type MoveToCenterOptions = {
+  shouldFetch?: boolean;
+  currentLocation?: BrowserLocation | SavedLocation;
+  source?: LocationSource;
+};
+
 export function useKakaoPlaceMap(): UseKakaoPlaceMapReturn {
   const restoredCenterRef = useRef<MapCenter | null>(typeof window !== "undefined" ? readSavedMapCenter() : null);
   const mapRef = useRef<HTMLDivElement | null>(null);
@@ -49,14 +68,25 @@ export function useKakaoPlaceMap(): UseKakaoPlaceMapReturn {
   const kakaoMapRef = useRef<KakaoMap | null>(null);
   const placesServiceRef = useRef<KakaoPlaces | null>(null);
   const markersRef = useRef<Map<string, KakaoMarker>>(new Map());
+  const placeByIdRef = useRef<Map<string, Place>>(new Map());
+  const shouldPanToSelectedPlaceRef = useRef(true);
+  const currentLocationMarkerRef = useRef<KakaoMarker | null>(null);
+  const currentLocationCircleRef = useRef<KakaoCircle | null>(null);
+  const currentLocationMarkerImageRef = useRef<KakaoMarkerImage | null>(null);
   const infoRef = useRef<KakaoInfoWindow | null>(null);
 
-  const [userPos, setUserPos] = useState(restoredCenterRef.current ?? DEFAULT_CENTER);
   const [center, setCenter] = useState(restoredCenterRef.current ?? DEFAULT_CENTER);
+  const [locationSource, setLocationSourceState] = useState<LocationSource>(
+    typeof window !== "undefined" ? readLocationSource() : "browser"
+  );
+  const [savedLocation, setSavedLocationState] = useState<SavedLocation | null>(
+    typeof window !== "undefined" ? readSavedLocation() : null
+  );
   const [keyword, setKeyword] = useState("");
   const [basePlaces, setBasePlaces] = useState<Place[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [isLocating, setIsLocating] = useState(false);
   const [needRefetch, setNeedRefetch] = useState(false);
   const [sortBy, setSortBy] = useState<PlaceSortOption>("distance");
   const [filters, setFilters] = useState<PlaceListFilterState>(DEFAULT_FILTERS);
@@ -70,6 +100,10 @@ export function useKakaoPlaceMap(): UseKakaoPlaceMapReturn {
     () => applyPlaceListFiltersAndSort([...basePlaces], sortBy, filters),
     [basePlaces, sortBy, filters]
   );
+
+  useEffect(() => {
+    placeByIdRef.current = new Map(places.map((place) => [place.id, place]));
+  }, [places]);
 
   useEffect(() => {
     setSelectedId((prev) => (prev && places.some((place) => place.id === prev) ? prev : null));
@@ -109,8 +143,10 @@ export function useKakaoPlaceMap(): UseKakaoPlaceMapReturn {
           }
 
           kakao.maps.event.addListener(marker, "click", () => {
-            setSelectedId(place.id);
-            openInfo(place);
+            const latestPlace = placeByIdRef.current.get(place.id) ?? place;
+            shouldPanToSelectedPlaceRef.current = false;
+            setSelectedId(latestPlace.id);
+            openInfo(latestPlace);
           });
 
           markersRef.current.set(place.id, marker);
@@ -136,6 +172,7 @@ export function useKakaoPlaceMap(): UseKakaoPlaceMapReturn {
   });
 
   const focusPlaceById = useCallback((id: string) => {
+    shouldPanToSelectedPlaceRef.current = true;
     setSelectedId(id);
   }, []);
 
@@ -154,20 +191,211 @@ export function useKakaoPlaceMap(): UseKakaoPlaceMapReturn {
     setNeedRefetch(false);
   }, [fetchPlaces]);
 
-  const goMyLocation = useCallback(() => {
+  const getCurrentLocationMarkerImage = useCallback(() => {
     const kakao = window.kakao;
+
+    if (currentLocationMarkerImageRef.current) {
+      return currentLocationMarkerImageRef.current;
+    }
+
+    const markerSvg = encodeURIComponent(`
+      <svg xmlns="http://www.w3.org/2000/svg" width="34" height="42" viewBox="0 0 34 42">
+        <path fill="#dc2626" stroke="#ffffff" stroke-width="3" d="M17 2C8.7 2 2 8.7 2 17c0 11.3 15 23 15 23s15-11.7 15-23C32 8.7 25.3 2 17 2z"/>
+        <circle cx="17" cy="17" r="6" fill="#ffffff"/>
+      </svg>
+    `);
+
+    currentLocationMarkerImageRef.current = new kakao.maps.MarkerImage(
+      `data:image/svg+xml;charset=UTF-8,${markerSvg}`,
+      new kakao.maps.Size(34, 42),
+      { offset: new kakao.maps.Point(17, 42) }
+    );
+
+    return currentLocationMarkerImageRef.current;
+  }, []);
+
+  const renderCurrentLocation = useCallback(
+    (location: BrowserLocation | SavedLocation, source: LocationSource) => {
+      const kakao = window.kakao;
+      const map = kakaoMapRef.current;
+      if (!map) return;
+
+      const position = new kakao.maps.LatLng(location.lat, location.lng);
+
+      if (!currentLocationMarkerRef.current) {
+        currentLocationMarkerRef.current = new kakao.maps.Marker({
+          position,
+          image: getCurrentLocationMarkerImage(),
+          title: source === "browser" ? "브라우저 현재 위치" : "저장 위치",
+          zIndex: 10,
+        });
+      } else {
+        currentLocationMarkerRef.current.setPosition(position);
+      }
+
+      currentLocationMarkerRef.current.setMap(map);
+
+      if (source === "browser" && "accuracyM" in location && location.accuracyM) {
+        if (!currentLocationCircleRef.current) {
+          currentLocationCircleRef.current = new kakao.maps.Circle({
+            center: position,
+            radius: location.accuracyM,
+            strokeWeight: 2,
+            strokeColor: "#dc2626",
+            strokeOpacity: 0.55,
+            fillColor: "#ef4444",
+            fillOpacity: 0.12,
+            zIndex: 2,
+          });
+        } else {
+          currentLocationCircleRef.current.setPosition(position);
+          currentLocationCircleRef.current.setRadius(location.accuracyM);
+        }
+
+        currentLocationCircleRef.current.setMap(map);
+        return;
+      }
+
+      currentLocationCircleRef.current?.setMap(null);
+    },
+    [getCurrentLocationMarkerImage]
+  );
+
+  const moveToCenter = useCallback(
+    async (nextCenter: MapCenter, options: MoveToCenterOptions = {}) => {
+      const kakao = window.kakao;
+      const map = kakaoMapRef.current;
+      if (!map) return;
+
+      programMoveRef.current = true;
+      setCenter(nextCenter);
+      saveMapCenter(nextCenter);
+      map.setCenter(new kakao.maps.LatLng(nextCenter.lat, nextCenter.lng));
+
+      if (options.currentLocation && options.source) {
+        renderCurrentLocation(options.currentLocation, options.source);
+      }
+
+      if (options.shouldFetch) {
+        await fetchPlaces(map, placesServiceRef.current);
+        setNeedRefetch(false);
+      }
+
+      window.setTimeout(() => {
+        programMoveRef.current = false;
+      }, 300);
+    },
+    [fetchPlaces, renderCurrentLocation]
+  );
+
+  const setLocationSource = useCallback((source: LocationSource) => {
+    setLocationSourceState(source);
+    saveLocationSource(source);
+  }, []);
+
+  const goMyLocation = useCallback(async () => {
     const map = kakaoMapRef.current;
     if (!map) return;
 
-    programMoveRef.current = true;
-    setCenter(userPos);
-    saveMapCenter(userPos);
-    map.panTo(new kakao.maps.LatLng(userPos.lat, userPos.lng));
+    setIsLocating(true);
+    try {
+      if (locationSource === "saved") {
+        if (!savedLocation) {
+          window.alert("저장 위치가 없습니다. 주소를 먼저 저장해주세요.");
+          return;
+        }
 
-    window.setTimeout(() => {
-      programMoveRef.current = false;
-    }, 300);
-  }, [userPos]);
+        await moveToCenter(savedLocation, {
+          shouldFetch: true,
+          currentLocation: savedLocation,
+          source: "saved",
+        });
+        return;
+      }
+
+      const nextPosition = await getGeolocation();
+      await moveToCenter(nextPosition, {
+        shouldFetch: true,
+        currentLocation: nextPosition,
+        source: "browser",
+      });
+    } catch {
+      window.alert("현재 위치를 가져올 수 없습니다. 브라우저 위치 권한을 확인해주세요.");
+    } finally {
+      setIsLocating(false);
+    }
+  }, [locationSource, moveToCenter, savedLocation]);
+
+  const findLocationByAddress = useCallback((address: string) => {
+    const kakao = window.kakao;
+
+    return new Promise<SavedLocation>((resolve, reject) => {
+      if (!kakao?.maps?.services?.Geocoder) {
+        reject(new Error("Kakao Geocoder is not available."));
+        return;
+      }
+
+      const geocoder = new kakao.maps.services.Geocoder();
+      geocoder.addressSearch(address, (data, status) => {
+        if (status !== kakao.maps.services.Status.OK || !Array.isArray(data) || data.length === 0) {
+          reject(new Error("Address not found."));
+          return;
+        }
+
+        const result = data[0];
+        resolve({
+          address: result.address_name || address,
+          lat: Number(result.y),
+          lng: Number(result.x),
+        });
+      });
+    });
+  }, []);
+
+  const saveLocationByAddress = useCallback(
+    async (address: string) => {
+      const trimmedAddress = address.trim();
+      if (!trimmedAddress) {
+        window.alert("저장할 주소를 입력해주세요.");
+        return false;
+      }
+
+      try {
+        const nextSavedLocation = await findLocationByAddress(trimmedAddress);
+        setSavedLocationState(nextSavedLocation);
+        saveSavedLocation(nextSavedLocation);
+        setLocationSource("saved");
+        await moveToCenter(nextSavedLocation, {
+          shouldFetch: true,
+          currentLocation: nextSavedLocation,
+          source: "saved",
+        });
+        return true;
+      } catch {
+        window.alert("주소를 찾을 수 없습니다. 도로명 주소나 지번 주소를 다시 확인해주세요.");
+        return false;
+      }
+    },
+    [findLocationByAddress, moveToCenter, setLocationSource]
+  );
+
+  const saveCurrentCenterAsLocation = useCallback(async () => {
+    const map = kakaoMapRef.current;
+    if (!map) return false;
+
+    const current = map.getCenter();
+    const nextSavedLocation = {
+      address: `현재 지도 중심 (${current.getLat().toFixed(6)}, ${current.getLng().toFixed(6)})`,
+      lat: current.getLat(),
+      lng: current.getLng(),
+    };
+
+    setSavedLocationState(nextSavedLocation);
+    saveSavedLocation(nextSavedLocation);
+    setLocationSource("saved");
+    renderCurrentLocation(nextSavedLocation, "saved");
+    return true;
+  }, [renderCurrentLocation, setLocationSource]);
 
   useEffect(() => {
     if (!window.kakao?.maps) return;
@@ -216,17 +444,31 @@ export function useKakaoPlaceMap(): UseKakaoPlaceMapReturn {
       (async () => {
         const restoredCenter = restoredCenterRef.current;
 
+        if (locationSource === "saved" && savedLocation) {
+          if (!restoredCenter) {
+            setCenter(savedLocation);
+            saveMapCenter(savedLocation);
+            map.setCenter(new kakao.maps.LatLng(savedLocation.lat, savedLocation.lng));
+          }
+
+          renderCurrentLocation(savedLocation, "saved");
+          await fetchPlaces(map, placesServiceRef.current);
+          setNeedRefetch(false);
+          return;
+        }
+
         try {
           const position = await getGeolocation();
-          setUserPos(position);
 
           if (!restoredCenter) {
             setCenter(position);
             saveMapCenter(position);
             map.setCenter(new kakao.maps.LatLng(position.lat, position.lng));
           }
+
+          renderCurrentLocation(position, "browser");
         } catch {
-          // ignore geolocation failure and keep current center
+          // Keep the restored/default center when the browser cannot provide a location.
         } finally {
           await fetchPlaces(map, placesServiceRef.current);
           setNeedRefetch(false);
@@ -253,6 +495,12 @@ export function useKakaoPlaceMap(): UseKakaoPlaceMapReturn {
     const map = kakaoMapRef.current;
     if (!map) return;
 
+    if (!shouldPanToSelectedPlaceRef.current) {
+      shouldPanToSelectedPlaceRef.current = true;
+      openInfo(selectedPlace);
+      return;
+    }
+
     programMoveRef.current = true;
     setCenter({ lat: selectedPlace.lat, lng: selectedPlace.lng });
     saveMapCenter({ lat: selectedPlace.lat, lng: selectedPlace.lng });
@@ -273,6 +521,12 @@ export function useKakaoPlaceMap(): UseKakaoPlaceMapReturn {
     needRefetch,
     refetchHere,
     goMyLocation,
+    locationSource,
+    setLocationSource,
+    savedLocation,
+    saveLocationByAddress,
+    saveCurrentCenterAsLocation,
+    isLocating,
     search,
     toggleLike: toggleLikeById,
     focusPlaceById,

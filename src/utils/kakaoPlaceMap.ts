@@ -8,10 +8,22 @@ import type { KakaoMap, KakaoPlaceResult, KakaoPlaces } from "../types/kakaoMap.
 
 export const DEFAULT_CENTER = { lat: 37.5665, lng: 126.978 };
 const MAP_STATE_KEY = "kakao-place-map-state";
+const LOCATION_SOURCE_KEY = "kakao-place-location-source";
+const SAVED_LOCATION_KEY = "kakao-place-saved-location";
 
 export type MapCenter = {
   lat: number;
   lng: number;
+};
+
+export type LocationSource = "browser" | "saved";
+
+export type SavedLocation = MapCenter & {
+  address: string;
+};
+
+export type BrowserLocation = MapCenter & {
+  accuracyM?: number;
 };
 
 export function readSavedMapCenter(): MapCenter | null {
@@ -30,6 +42,51 @@ export function readSavedMapCenter(): MapCenter | null {
   }
 }
 
+export function readLocationSource(): LocationSource {
+  try {
+    const raw = window.localStorage.getItem(LOCATION_SOURCE_KEY);
+    return raw === "saved" ? "saved" : "browser";
+  } catch {
+    return "browser";
+  }
+}
+
+export function saveLocationSource(source: LocationSource) {
+  try {
+    window.localStorage.setItem(LOCATION_SOURCE_KEY, source);
+  } catch {
+    // ignore storage failures
+  }
+}
+
+export function readSavedLocation(): SavedLocation | null {
+  try {
+    const raw = window.localStorage.getItem(SAVED_LOCATION_KEY);
+    if (!raw) return null;
+
+    const parsed = JSON.parse(raw) as Partial<SavedLocation>;
+    if (
+      typeof parsed.address !== "string" ||
+      typeof parsed.lat !== "number" ||
+      typeof parsed.lng !== "number"
+    ) {
+      return null;
+    }
+
+    return { address: parsed.address, lat: parsed.lat, lng: parsed.lng };
+  } catch {
+    return null;
+  }
+}
+
+export function saveSavedLocation(location: SavedLocation) {
+  try {
+    window.localStorage.setItem(SAVED_LOCATION_KEY, JSON.stringify(location));
+  } catch {
+    // ignore storage failures
+  }
+}
+
 export function saveMapCenter(center: MapCenter) {
   try {
     window.sessionStorage.setItem(MAP_STATE_KEY, JSON.stringify(center));
@@ -38,7 +95,7 @@ export function saveMapCenter(center: MapCenter) {
   }
 }
 
-export function getGeolocation(): Promise<MapCenter> {
+export function getGeolocation(): Promise<BrowserLocation> {
   return new Promise((resolve, reject) => {
     if (!navigator.geolocation) {
       reject(new Error("geolocation not supported"));
@@ -46,7 +103,12 @@ export function getGeolocation(): Promise<MapCenter> {
     }
 
     navigator.geolocation.getCurrentPosition(
-      (position) => resolve({ lat: position.coords.latitude, lng: position.coords.longitude }),
+      (position) =>
+        resolve({
+          lat: position.coords.latitude,
+          lng: position.coords.longitude,
+          accuracyM: Number.isFinite(position.coords.accuracy) ? position.coords.accuracy : undefined,
+        }),
       (error) => reject(error),
       { enableHighAccuracy: true, timeout: 8000, maximumAge: 60_000 }
     );
