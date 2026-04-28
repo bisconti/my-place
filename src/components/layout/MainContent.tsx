@@ -70,7 +70,7 @@ export default function MainContent() {
   };
 
   return (
-    <div className="h-full min-h-0 w-full px-4 py-4">
+    <div className="h-full min-h-0 w-full overflow-hidden px-4 py-4">
       <div className="grid h-full min-h-0 grid-cols-1 gap-4 lg:grid-cols-12">
         <PlaceListPanel
           places={places}
@@ -86,8 +86,8 @@ export default function MainContent() {
           isLoggedIn={isLoggedIn}
         />
 
-        <div className="lg:col-span-8 xl:col-span-9 h-full min-h-0 flex flex-col gap-3">
-          <div className="space-y-2">
+        <div className="lg:col-span-8 xl:col-span-9 h-full min-h-0 flex flex-col gap-3 overflow-hidden">
+          <div className="shrink-0 space-y-2">
             <form
               onSubmit={(e) => {
                 e.preventDefault();

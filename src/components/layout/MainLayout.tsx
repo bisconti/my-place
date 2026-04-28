@@ -11,10 +11,14 @@ const MainLayout = () => {
   useAuthAutoRefresh();
 
   return (
-    <>
-      <Header />
-      <MainContent />
-    </>
+    <div className="h-screen min-h-0 overflow-hidden bg-gray-50 flex flex-col">
+      <div className="shrink-0">
+        <Header />
+      </div>
+      <main className="flex-1 min-h-0 overflow-hidden">
+        <MainContent />
+      </main>
+    </div>
   );
 };
 

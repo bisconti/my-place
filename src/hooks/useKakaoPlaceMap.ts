@@ -493,6 +493,7 @@ export function useKakaoPlaceMap(): UseKakaoPlaceMapReturn {
 
     const kakao = window.kakao;
     const map = kakaoMapRef.current;
+    const marker = markersRef.current.get(selectedPlace.id);
     if (!map) return;
 
     if (!shouldPanToSelectedPlaceRef.current) {
@@ -501,10 +502,13 @@ export function useKakaoPlaceMap(): UseKakaoPlaceMapReturn {
       return;
     }
 
+    const nextPosition = marker?.getPosition() ?? new kakao.maps.LatLng(selectedPlace.lat, selectedPlace.lng);
+    const nextCenter = { lat: nextPosition.getLat(), lng: nextPosition.getLng() };
+
     programMoveRef.current = true;
-    setCenter({ lat: selectedPlace.lat, lng: selectedPlace.lng });
-    saveMapCenter({ lat: selectedPlace.lat, lng: selectedPlace.lng });
-    map.panTo(new kakao.maps.LatLng(selectedPlace.lat, selectedPlace.lng));
+    setCenter(nextCenter);
+    saveMapCenter(nextCenter);
+    map.panTo(nextPosition);
     openInfo(selectedPlace);
 
     window.setTimeout(() => {

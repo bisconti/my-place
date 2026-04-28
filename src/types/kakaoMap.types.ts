@@ -44,6 +44,7 @@ export type KakaoMap = {
 export type KakaoMarker = {
   setMap(map: KakaoMap | null): void;
   setPosition(latlng: KakaoLatLng): void;
+  getPosition(): KakaoLatLng;
 };
 
 export type KakaoMarkerImage = unknown;
