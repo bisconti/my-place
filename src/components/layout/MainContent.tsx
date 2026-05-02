@@ -14,7 +14,6 @@ import PlaceListPanel from "./PlaceListPanel";
 
 export default function MainContent() {
   const navigate = useNavigate();
-  const [pendingKeyword, setPendingKeyword] = useState("");
   const [savedAddressInput, setSavedAddressInput] = useState("");
   const [isLocationPanelOpen, setIsLocationPanelOpen] = useState(false);
 
@@ -32,7 +31,6 @@ export default function MainContent() {
     saveLocationByAddress,
     saveCurrentCenterAsLocation,
     isLocating,
-    search,
     toggleLike,
     focusPlaceById,
     sortBy,
@@ -88,25 +86,6 @@ export default function MainContent() {
 
         <div className="lg:col-span-8 xl:col-span-9 h-full min-h-0 flex flex-col gap-3 overflow-hidden">
           <div className="shrink-0 space-y-2">
-            <form
-              onSubmit={(e) => {
-                e.preventDefault();
-                void search(pendingKeyword);
-              }}
-              className="flex items-center gap-2"
-            >
-              <input
-                value={pendingKeyword}
-                onChange={(e) => setPendingKeyword(e.target.value)}
-                className="flex-1 border rounded-md px-3 py-2 text-sm"
-                placeholder="식당, 메뉴, 지역을 검색해보세요"
-              />
-
-              <button type="submit" className="px-3 py-2 rounded-md border text-sm hover:bg-gray-50">
-                검색
-              </button>
-            </form>
-
             <div className="flex flex-wrap items-center gap-2">
               <div className="inline-flex rounded-md border overflow-hidden text-sm">
                 <button

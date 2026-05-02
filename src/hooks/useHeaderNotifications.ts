@@ -47,7 +47,6 @@ export function useHeaderNotifications(actions: HeaderNotificationActions) {
   const readAllMutation = useReadAllNotificationsMutation();
 
   const unreadCount = unreadCountQuery.data?.unreadCount ?? 0;
-  const notifications = notificationsQuery.data ?? [];
   const isNotificationLoading =
     notificationsQuery.isLoading || readNotificationMutation.isPending || readAllMutation.isPending;
 
@@ -110,7 +109,7 @@ export function useHeaderNotifications(actions: HeaderNotificationActions) {
     () => ({
       notificationRef,
       unreadCount,
-      notifications,
+      notifications: notificationsQuery.data ?? [],
       isNotificationOpen,
       isNotificationLoading,
       formatNotificationDate,
@@ -122,7 +121,7 @@ export function useHeaderNotifications(actions: HeaderNotificationActions) {
     }),
     [
       unreadCount,
-      notifications,
+      notificationsQuery.data,
       isNotificationOpen,
       isNotificationLoading,
       toggleNotifications,

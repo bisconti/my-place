@@ -19,7 +19,7 @@ const FavoritesList = () => {
 
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
 
-  const favorites = favoritesQuery.data ?? [];
+  const favorites = useMemo(() => favoritesQuery.data ?? [], [favoritesQuery.data]);
   const allIds = useMemo(() => favorites.map((item) => item.placeId), [favorites]);
   const isAllChecked = favorites.length > 0 && selectedIds.length === favorites.length;
 

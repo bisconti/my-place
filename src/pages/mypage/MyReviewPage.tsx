@@ -1,12 +1,12 @@
-/*
-  file: MyReviewPage.tsx
-  description
-  - 내가 작성한 리뷰 목록을 조회하고 삭제할 수 있는 페이지 컴포넌트
-*/
 import BackButton from "../../components/form/BackButton";
 import MyReviewList from "../../components/mypage/MyReviewList";
-import { useDeleteMyReviewMutation, useMyReviewsQuery } from "../../features/mypage/queries/useMyPageQueries";
+import {
+  useDeleteMyReviewMutation,
+  useMyReviewsQuery,
+  useUpdateMyReviewMutation,
+} from "../../features/mypage/queries/useMyPageQueries";
 import { useAuthStore } from "../../stores/authStore";
+import type { PlaceReviewUpdateRequest } from "../../types/place/placeReview.types";
 
 const MyReviewsPage = () => {
   const user = useAuthStore((state) => state.user);
@@ -14,6 +14,7 @@ const MyReviewsPage = () => {
 
   const reviewsQuery = useMyReviewsQuery(userEmail);
   const deleteReviewMutation = useDeleteMyReviewMutation(userEmail);
+  const updateReviewMutation = useUpdateMyReviewMutation(userEmail);
 
   const handleDeleteReview = async (reviewId: number) => {
     const isConfirmed = window.confirm("정말 이 리뷰를 삭제하시겠습니까?");
@@ -28,6 +29,16 @@ const MyReviewsPage = () => {
     }
   };
 
+  const handleUpdateReview = async (reviewId: number, payload: PlaceReviewUpdateRequest) => {
+    try {
+      await updateReviewMutation.mutateAsync({ reviewId, payload });
+      alert("리뷰가 수정되었습니다.");
+    } catch (error) {
+      console.error("리뷰 수정 실패", error);
+      alert("리뷰 수정에 실패했습니다.");
+    }
+  };
+
   return (
     <div className="max-w-4xl mx-auto px-4 py-8">
       <div className="relative mb-6">
@@ -37,7 +48,9 @@ const MyReviewsPage = () => {
       </div>
 
       {reviewsQuery.isLoading && (
-        <div className="bg-white rounded-xl shadow-sm border p-8 text-center text-gray-500">리뷰를 불러오는 중입니다...</div>
+        <div className="bg-white rounded-xl shadow-sm border p-8 text-center text-gray-500">
+          리뷰를 불러오는 중입니다...
+        </div>
       )}
 
       {!reviewsQuery.isLoading && reviewsQuery.isError && (
@@ -47,7 +60,12 @@ const MyReviewsPage = () => {
       )}
 
       {!reviewsQuery.isLoading && !reviewsQuery.isError && (
-        <MyReviewList reviews={reviewsQuery.data ?? []} onDelete={handleDeleteReview} />
+        <MyReviewList
+          reviews={reviewsQuery.data ?? []}
+          onDelete={handleDeleteReview}
+          onUpdate={handleUpdateReview}
+          isUpdating={updateReviewMutation.isPending}
+        />
       )}
     </div>
   );

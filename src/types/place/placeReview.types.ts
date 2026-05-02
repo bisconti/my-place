@@ -4,13 +4,17 @@
   - 식당 리뷰 등록 type
 */
 export interface PlaceReviewRequest {
-  userEmail: string;
   placeId: string;
   placeName?: string;
   address?: string;
   roadAddress?: string;
   category?: string;
   phone?: string;
+  rating: number;
+  content: string;
+}
+
+export interface PlaceReviewUpdateRequest {
   rating: number;
   content: string;
 }

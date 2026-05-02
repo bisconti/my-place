@@ -1,23 +1,14 @@
-/*
-  파일명: placeReview.api.ts
-  기능 
-  - 리뷰 등록 / 조회 / 삭제 API
-*/
-
 import type {
   PlaceReviewRequest,
   PlaceReviewResponse,
   PlaceReviewSummaryResponse,
+  PlaceReviewUpdateRequest,
 } from "../../types/place/placeReview.types";
 import { api } from "../api";
 
-/**
- * 리뷰 등록
- */
 export const savePlaceReview = (review: PlaceReviewRequest, images: File[]) => {
   const formData = new FormData();
 
-  formData.append("userEmail", review.userEmail);
   formData.append("placeId", review.placeId);
   formData.append("placeName", review.placeName ?? "");
   formData.append("address", review.address ?? "");
@@ -32,38 +23,28 @@ export const savePlaceReview = (review: PlaceReviewRequest, images: File[]) => {
   return api.post<PlaceReviewResponse>("/api/reviews", formData);
 };
 
-/**
- * 특정 장소 리뷰 조회
- */
+export const updatePlaceReview = async (reviewId: number, payload: PlaceReviewUpdateRequest) => {
+  const response = await api.put<PlaceReviewResponse>(`/api/reviews/${reviewId}`, payload);
+  return response.data;
+};
+
 export const getPlaceReviews = (placeId: string) => {
   return api.get<PlaceReviewResponse[]>(`/api/reviews/place/${placeId}`);
 };
 
-/**
- * 식당 상세 페이지 별점 & 리뷰수 조회
- */
 export const getPlaceReviewSummary = (placeId: string) => {
   return api.get<PlaceReviewSummaryResponse>(`/api/reviews/summary/${placeId}`);
 };
 
-/**
- * 특정 사용자 리뷰 조회
- */
-export const getMyReviews = async (userEmail: string): Promise<PlaceReviewResponse[]> => {
-  const response = await api.get<PlaceReviewResponse[]>("/api/reviews/my", {
-    params: { userEmail },
-  });
+export const getMyReviews = async (): Promise<PlaceReviewResponse[]> => {
+  const response = await api.get<PlaceReviewResponse[]>("/api/reviews/my");
   return response.data;
 };
 
-// 마이페이지 리뷰 건수 조회
-export const getMyReviewCount = (userEmail: string) => {
-  return api.get<number>(`/user/${userEmail}/count`);
+export const getMyReviewCount = () => {
+  return api.get<number>("/user/me/review-count");
 };
 
-/**
- * 리뷰 삭제
- */
 export const deletePlaceReview = async (reviewId: number): Promise<void> => {
   await api.delete(`/api/reviews/${reviewId}`);
 };

@@ -13,9 +13,10 @@ import {
 } from "../../../api/place/placeCollection.api";
 import { getMyPlaceLikeCount, getMyPlaceLikes, togglePlaceLikeByPayload } from "../../../api/place/placeLike.api";
 import { getRecentPlacesApi } from "../../../api/place/recentPlace.api";
-import { deletePlaceReview, getMyReviewCount, getMyReviews } from "../../../api/place/placeReview.api";
+import { deletePlaceReview, getMyReviewCount, getMyReviews, updatePlaceReview } from "../../../api/place/placeReview.api";
 import type { PlaceCollectionCreateRequest } from "../../../types/place/placeCollection.types";
 import type { PlaceLikeResponse } from "../../../types/place/placeLike.types";
+import type { PlaceReviewUpdateRequest } from "../../../types/place/placeReview.types";
 import { myPageQueryKeys } from "./myPageQueryKeys";
 
 export function useMyPageStatsQuery(userEmail?: string) {
@@ -25,7 +26,7 @@ export function useMyPageStatsQuery(userEmail?: string) {
     queryFn: async () => {
       const [likeResult, reviewResult, recentPlaces] = await Promise.all([
         getMyPlaceLikeCount(),
-        getMyReviewCount(userEmail!),
+        getMyReviewCount(),
         getRecentPlacesApi(),
       ]);
 
@@ -115,7 +116,20 @@ export function useMyReviewsQuery(userEmail?: string) {
   return useQuery({
     queryKey: myPageQueryKeys.myReviews(userEmail),
     enabled: !!userEmail,
-    queryFn: () => getMyReviews(userEmail!),
+    queryFn: getMyReviews,
+  });
+}
+
+export function useUpdateMyReviewMutation(userEmail?: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ reviewId, payload }: { reviewId: number; payload: PlaceReviewUpdateRequest }) =>
+      updatePlaceReview(reviewId, payload),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: myPageQueryKeys.myReviews(userEmail) });
+      await queryClient.invalidateQueries({ queryKey: myPageQueryKeys.stats(userEmail) });
+    },
   });
 }
 

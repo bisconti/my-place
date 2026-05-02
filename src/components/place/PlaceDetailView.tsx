@@ -1,8 +1,3 @@
-/*
-  file: PlaceDetailView.tsx
-  description
-  - 식당 상세 화면을 조합하고 상세 조회 훅과 서브 컴포넌트를 연결하는 컨테이너 컴포넌트
-*/
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { usePlaceDetailData } from "../../hooks/usePlaceDetailData";
 import type { Place } from "../../types/place/place.types";
@@ -10,6 +5,7 @@ import BackButton from "../form/BackButton";
 import ImageViewerModal from "../share/ImageViewerModal";
 import PlaceCollectionSaveModal from "./PlaceCollectionSaveModal";
 import PlaceImageGallery from "./PlaceImageGallery";
+import PlaceMiniMap from "./PlaceMiniMap";
 import PlaceReviewSection from "./PlaceReviewSection";
 
 type LocationState = {
@@ -49,7 +45,7 @@ const PlaceDetailView = () => {
   const moveToLoginIfNeeded = () => {
     if (token) return false;
 
-    alert("로그인 후 이용 가능합니다.");
+    alert("로그인이 필요한 기능입니다.");
     navigate("/login");
     return true;
   };
@@ -166,7 +162,7 @@ const PlaceDetailView = () => {
 
                 <div className="rounded-lg bg-gray-50 p-4">
                   <p className="text-sm text-gray-500">별점</p>
-                  <p className="text-base text-gray-800 mt-1">⭐ {reviewSummary ? reviewSummary.averageRating : "-"}</p>
+                  <p className="text-base text-gray-800 mt-1">★ {reviewSummary ? reviewSummary.averageRating : "-"}</p>
                 </div>
 
                 <div className="rounded-lg bg-gray-50 p-4">
@@ -199,19 +195,10 @@ const PlaceDetailView = () => {
                   {place.liked ? "현재 찜한 맛집입니다." : "아직 찜하지 않은 맛집입니다."}
                 </p>
               </div>
-
-              <div className="pt-4 border-t">
-                <button
-                  type="button"
-                  onClick={() => navigate(-1)}
-                  className="w-full py-3 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50 transition"
-                >
-                  이전 화면으로 돌아가기
-                </button>
-              </div>
             </div>
           </div>
 
+          <PlaceMiniMap name={place.name} lat={place.lat} lng={place.lng} />
           <PlaceReviewSection reviews={reviews} isLoading={isReviewLoading} onSelectImage={openImageViewer} />
         </div>
       </div>

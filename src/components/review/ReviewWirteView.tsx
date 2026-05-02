@@ -1,9 +1,3 @@
-/*
-  파일명: ReviewWriteView.tsx
-  describe
-  - 리뷰 작성 화면 component
-*/
-
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import axios, { AxiosError } from "axios";
@@ -28,8 +22,7 @@ type ErrorResponse = {
 
 const ReviewWriteView = ({ place }: Props) => {
   const navigate = useNavigate();
-
-  const loginUser = useAuthStore.getState().user;
+  const loginUser = useAuthStore((state) => state.user);
 
   const [rating, setRating] = useState<number>(0);
   const [content, setContent] = useState("");
@@ -47,19 +40,17 @@ const ReviewWriteView = ({ place }: Props) => {
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFiles = Array.from(e.target.files ?? []);
-
     if (selectedFiles.length === 0) return;
 
     const nextFiles = [...files, ...selectedFiles];
 
     if (nextFiles.length > 10) {
-      alert("이미지는 최대 10장까지 첨부할 수 있습니다.");
+      alert("이미지는 최대 10개까지 첨부할 수 있습니다.");
       e.target.value = "";
       return;
     }
 
     const invalidFile = nextFiles.find((file) => !file.type || !file.type.startsWith("image/"));
-
     if (invalidFile) {
       alert("이미지 파일만 첨부할 수 있습니다.");
       e.target.value = "";
@@ -90,7 +81,7 @@ const ReviewWriteView = ({ place }: Props) => {
       return;
     }
 
-    if (!loginUser?.useremail) {
+    if (!loginUser) {
       alert("로그인이 필요합니다.");
       return;
     }
@@ -98,7 +89,6 @@ const ReviewWriteView = ({ place }: Props) => {
     try {
       await savePlaceReview(
         {
-          userEmail: loginUser.useremail,
           placeId: place.id,
           placeName: place.name,
           address: place.address ?? "",
@@ -116,10 +106,11 @@ const ReviewWriteView = ({ place }: Props) => {
     } catch (error: unknown) {
       if (axios.isAxiosError(error)) {
         const axiosError = error as AxiosError<ErrorResponse>;
-        alert(axiosError.response?.data?.message || "리뷰 등록 실패");
-      } else {
-        alert("알 수 없는 오류가 발생했습니다.");
+        alert(axiosError.response?.data?.message || "리뷰 등록에 실패했습니다.");
+        return;
       }
+
+      alert("알 수 없는 오류가 발생했습니다.");
     }
   };
 
@@ -136,13 +127,15 @@ const ReviewWriteView = ({ place }: Props) => {
             <p className="text-sm text-gray-500 mb-2">별점</p>
             <div className="flex gap-2 text-3xl cursor-pointer select-none">
               {[1, 2, 3, 4, 5].map((star) => (
-                <span
+                <button
                   key={star}
+                  type="button"
                   onClick={() => setRating(star)}
                   className={`transition ${star <= rating ? "text-yellow-400" : "text-gray-300 hover:text-yellow-300"}`}
+                  aria-label={`${star}점`}
                 >
                   ★
-                </span>
+                </button>
               ))}
             </div>
           </div>
@@ -152,13 +145,13 @@ const ReviewWriteView = ({ place }: Props) => {
             <textarea
               value={content}
               onChange={(e) => setContent(e.target.value)}
-              placeholder="음식 맛, 분위기, 서비스 등을 자유롭게 작성해주세요."
+              placeholder="음식 맛, 분위기, 서비스 등을 자유롭게 적어주세요."
               className="w-full h-32 p-3 border rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-red-400"
             />
           </div>
 
           <div>
-            <p className="text-sm text-gray-500 mb-2">사진 첨부 (최대 10장)</p>
+            <p className="text-sm text-gray-500 mb-2">사진 첨부 (최대 10개)</p>
 
             <input
               type="file"
@@ -168,7 +161,7 @@ const ReviewWriteView = ({ place }: Props) => {
               className="block w-full text-sm text-gray-700"
             />
 
-            {files.length > 0 && <p className="text-sm text-gray-500 mt-2">{files.length} / 10장 선택됨</p>}
+            {files.length > 0 && <p className="text-sm text-gray-500 mt-2">{files.length} / 10개 선택됨</p>}
 
             {previewUrls.length > 0 && (
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mt-4">

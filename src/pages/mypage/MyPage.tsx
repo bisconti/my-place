@@ -1,8 +1,3 @@
-/*
-  file: MyPage.tsx
-  description
-  - 마이페이지의 프로필, 통계, 메뉴, 최근 방문 영역을 조합하는 페이지 컴포넌트
-*/
 import { useMemo, useState } from "react";
 import { Navigate, useNavigate } from "react-router-dom";
 import BackButton from "../../components/form/BackButton";
@@ -39,7 +34,7 @@ const MyPage = () => {
   const recentActivities = useMemo(
     () => [
       { title: "리뷰를 남겨보세요", meta: "방문한 식당 경험을 기록할 수 있어요." },
-      { title: "저장 리스트를 만들어보세요", meta: "치킨, 데이트, 혼밥처럼 목적별로 모아둘 수 있어요." },
+      { title: "저장 리스트를 만들어보세요", meta: "혼밥, 데이트, 회식처럼 목적별로 맛집을 모아둘 수 있어요." },
       { title: "최근 방문 기록을 확인해보세요", meta: "다시 가고 싶은 식당을 빠르게 찾을 수 있어요." },
     ],
     []
